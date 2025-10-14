@@ -29,6 +29,7 @@ hash_t* oneptr_ciphers_ciphers_sha3( const char* msg );
 hash_t* oneptr_ciphers_ciphers_sha256( const char* msg );
 hash_t* oneptr_ciphers_ciphers_sha512( const char* msg );
 
+
 enum PKI_CIPHERS {
     DIFFIE,
     AES,
@@ -81,12 +82,17 @@ typedef struct AES {
 aes_t* _oneptr_ciphers_init_aes( const unsigned short wordlength, const unsigned short word_columns );
 aes_t* oneptr_ciphers_ciphers_aes( const char* msg, const char* key );
 
-typedef struct AES_TKIP {
-    aes_t* aes;
-    tkip_t* tkip;
-    const char* checksum;
-    const char* checksum_reverse;
-} aes_tkip_t;
+
+typedef struct RSA {
+    hash_t* pub;
+    hash_t* priv;
+} rsa_t;
+
+rsa_t* _oneptr_ciphers_init_rsa( const unsigned short keylength );
+rsa_t* oneptr_ciphers_ciphers_rsa( const char* key );
+
+#include "ciphers_modern.h"
+
 
 #ifdef __cplusplus
 }

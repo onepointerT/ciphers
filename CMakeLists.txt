@@ -16,11 +16,12 @@ include_directories( ${PROJECT_SOURCE_DIR} )
 
 add_subdirectory( lib/libm )
 include_directories( ${PROJECT_SOURCE_DIR}/lib/libm/src/ce-libm )
+include_directories( ${PROJECT_SOURCE_DIR}/lib/libm/src/ce-libprim )
 include_directories( ${PROJECT_SOURCE_DIR}/lib/libm/lib/endian_h )
 
 file( GLOB ONEPTR_CIPHERS_SRCFILES_C ${PROJECT_SOURCE_DIR}/*.c )
 add_library( oneptrc_ciphers STATIC ${ONEPTR_CIPHERS_SRCFILES_C} )
-target_link_libraries( oneptrc_ciphers m_ce )
+target_link_libraries( oneptrc_ciphers m_ce prim_ce )
 
 
 include_directories( ${PROJECT_SOURCE_DIR}/cpy )

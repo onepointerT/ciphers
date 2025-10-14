@@ -1,4 +1,4 @@
 [submodule "lib/libm"]
     path = lib/libm
     url = https://github.com/onepointerT/libm.git
-    tag = c35627b7ec5bc9456cb49f12bea622cc455232af
+    tag = 97d04fdff012eba75b9c5d52356c7e12194657b7
