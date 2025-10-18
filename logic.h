@@ -12,12 +12,13 @@ char* __xor_str( const char* s1, const char* s2 );
 
 char* __leftrotate( const char* word, const unsigned short bitlength, const unsigned short wordparts );
 char* __leftrotate_short( const char* word, const unsigned short n_positions );
-//const char* __rightrotate( const char* word, const unsigned short bitlength, const unsigned short wordparts );
+char* __rightrotate( const char* word, const unsigned short bitlength, const unsigned short wordparts );
+char* __rightrotate_short( const char* word, const unsigned short n_positions );
 
 double __multiplicative_inverse( const double n, const double base, const double exponent );
 
-char* leftrotate( const char* word, const unsigned short wordbit, const unsigned short bitlength, const unsigned int bits_selected );
-char* leftrotatemultiple( const char* word, const unsigned int rotate_mulitplicator, const unsigned short wordbit, const unsigned short bitlength, const unsigned int bits_selected );
+char* leftrotatemultiple( const char* word, const unsigned int rotate_mulitplicator, const unsigned short wordbit_length );
+char* rightrotatemultiple( const char* word, const unsigned int rotate_mulitplicator, const unsigned short wordbit_length );
 
 #ifdef __cplusplus
 }

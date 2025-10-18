@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <libm.h>
 
-char* __leftrotate( const char* word, const unsigned short bitlength, const unsigned short wordparts ) {
+char* __rightrotate( const char* word, const unsigned short bitlength, const unsigned short wordparts ) {
 
     unsigned int wordlength = sizeof(word)/sizeof(const char);
 
@@ -16,7 +16,7 @@ char* __leftrotate( const char* word, const unsigned short bitlength, const unsi
 
     char** wp = (char**) malloc(sizeof(char*)*wp_size);
     unsigned short wi = 0;
-    for ( unsigned short iwp = 0; iwp < wp_size && wi < wordlength; iwp++ ) {
+    for ( unsigned short iwp = wp_size - 1; iwp >= 0 && wi < wordlength; iwp-- ) {
         wp[iwp] = (char*) malloc(sizeof(char)*bit_size);
         
         char* wpw = wp[iwp];
@@ -26,15 +26,15 @@ char* __leftrotate( const char* word, const unsigned short bitlength, const unsi
     }
 
     char* new_word = (char*) malloc(sizeof(char)*wordlength);
-    unsigned short iwp = 0;
+    unsigned short iwp = wp_size - 1;
     unsigned short iw = 0;
-    for ( unsigned short inw = 0; inw < wordlength && iwp < wp_size; inw++, ++iw ) {
-        if ( iw >= bitlength ) { iw = 0; ++iwp; }
+    for ( unsigned short inw = 0; inw < wordlength && iwp >= 0; inw++, ++iw ) {
+        if ( iw >= bitlength ) { iw = 0; --iwp; }
 
-        if ( inw >= wordlength - bitlength - 1 ) {
-            new_word[inw] = wp[0][iw];
-        } else {
+        if ( inw >= 0 && inw < bitlength ) {
             new_word[inw] = wp[wp_size-1][iw];
+        } else {
+            new_word[inw] = wp[iwp][iw];
         }
     }
 

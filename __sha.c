@@ -52,7 +52,7 @@ hash_t* oneptr_ciphers_ciphers_sha( const char* msg, const unsigned short bitlen
     for ( unsigned long i = 0; i < blkbuf_msg512->buffercount; i++ ) {
 
         // Compress message
-        char** chunks[16];
+        char** chunks = (char**) malloc(sizeof(char*)*16);
         unsigned int isha = 0;
         for ( unsigned int ic = 0; ic < 16 && isha < bitlength; ic++ ) { 
             unsigned int bufpos = 0;
@@ -72,7 +72,7 @@ hash_t* oneptr_ciphers_ciphers_sha( const char* msg, const unsigned short bitlen
             for ( unsigned int iw = 16; iw < 80 && wbuf < blkbuf_word->buffercount; iw++, ++wbuf ) {
                 _oneptr_ciphers_blockbuf_switchbuf( blkbuf_word, wbuf );
                 char* tmpval = __xor_str(_word(blkbuf_word, iw-1), __xor_str(_word(blkbuf_word, iw-8), __xor_str(_word(blkbuf_word, iw-14), _word(blkbuf_word, iw-16))));
-                blkbuf_word->buf->buf = leftrotate(tmpval, iw, 32, 32 / iw);
+                blkbuf_word->buf->buf = __leftrotate(tmpval, 32, 32 / iw);
             }
         }
 
