@@ -6,28 +6,21 @@
 extern "C" {
 #endif
 
+#include "_hash.h"
 #include "_word.h"
 
 
-
-typedef struct Hash {
-    char* hash;
-    void* parts;
-} hash_t;
-
-hash_t* oneptr_ciphers_ciphers_init_hash( const unsigned int lenght_of_hash_bits );
-hash_t* oneptr_ciphers_ciphers_init_hash_parts( const unsigned int lenght_of_hash_bits, void* parts_struct );
 
 typedef struct SHAsum {
     hash_t* hash;
     void* checksum_cipher;
 } sha_t;
 
-hash_t* oneptr_ciphers_ciphers_sha( const char* msg, const unsigned short bitlength, const unsigned int rounds );
-hash_t* oneptr_ciphers_ciphers_sha1( const char* msg );
-hash_t* oneptr_ciphers_ciphers_sha3( const char* msg );
-hash_t* oneptr_ciphers_ciphers_sha256( const char* msg );
-hash_t* oneptr_ciphers_ciphers_sha512( const char* msg );
+hash_t* onepointer_ciphers_ciphers_sha( const char* msg, const unsigned short bitlength, const unsigned int rounds );
+hash_t* onepointer_ciphers_ciphers_sha1( const char* msg );
+hash_t* onepointer_ciphers_ciphers_sha3( const char* msg );
+hash_t* onepointer_ciphers_ciphers_sha256( const char* msg );
+hash_t* onepointer_ciphers_ciphers_sha512( const char* msg );
 
 
 enum PKI_CIPHERS {
@@ -79,8 +72,8 @@ typedef struct AES {
     void* cipher;
 } aes_t;
 
-aes_t* _oneptr_ciphers_init_aes( const unsigned short wordlength, const unsigned short word_columns );
-aes_t* oneptr_ciphers_ciphers_aes( const char* msg, const char* key );
+aes_t* _onepointer_ciphers_init_aes( const unsigned short wordlength, const unsigned short word_columns );
+aes_t* onepointer_ciphers_ciphers_aes( const char* msg, const char* key );
 
 
 typedef struct RSA {
@@ -88,10 +81,10 @@ typedef struct RSA {
     hash_t* priv;
 } rsa_t;
 
-rsa_t* _oneptr_ciphers_init_rsa( const unsigned short keylength );
-rsa_t* oneptr_ciphers_ciphers_rsa( const char* key );
+rsa_t* _onepointer_ciphers_init_rsa( const unsigned short keylength );
+rsa_t* onepointer_ciphers_ciphers_rsa( const char* key );
 
-#include "ciphers_modern.h"
+// #include "ciphers_modern.h"
 
 
 #ifdef __cplusplus

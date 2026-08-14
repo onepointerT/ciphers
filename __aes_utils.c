@@ -62,13 +62,13 @@ const char* __aes_keyexpansion( const char* word, const unsigned short R, size_t
 
 _word_table_t* __aes_add_round_key( const _word_table_t* word_table, const _word_table_t* key_table ) {
 
-    _word_table_t* word_table2 = _oneptr_ciphers_word_table_init( 4, 8, 4 );
+    _word_table_t* word_table2 = _onepointer_ciphers_word_table_init( 4, 8, 4 );
 
     unsigned short wl = 0;
     for ( unsigned short w = 0; w < 4 && wl < 4; ) {
-        const char* new_keyed_word = __xor_str( _oneptr_ciphers_word_table(word_table, wl, w)
-                                              , _oneptr_ciphers_word_table(key_table, wl, w) );
-        _oneptr_ciphers_word_table_writeto( word_table, wl, w, new_keyed_word );
+        const char* new_keyed_word = __xor_str( _onepointer_ciphers_word_table(word_table, wl, w)
+                                              , _onepointer_ciphers_word_table(key_table, wl, w) );
+        _onepointer_ciphers_word_table_writeto( word_table, wl, w, new_keyed_word );
         if ( w == 3 ) { wl++; w = 0; }
         else w++;
     }
@@ -81,7 +81,7 @@ void __aes_sub_bytes( _word_table_t* word_table ) {
 
     for ( unsigned int wl = 0; wl < word_table->word_lanes_size; wl++ ) {
         for ( unsigned int w = 0; w < word_table->words_size; w++ ) {
-            _oneptr_ciphers_word_table_writeto( word_table, wl, w, __aes_sbox_rijndael(_oneptr_ciphers_word_table(word_table, wl, w)));
+            _onepointer_ciphers_word_table_writeto( word_table, wl, w, __aes_sbox_rijndael(_onepointer_ciphers_word_table(word_table, wl, w)));
         }
     }
 
@@ -214,7 +214,7 @@ void __aes_mix_columns_calc_column_default4( const _word_table_t* origin, _word_
 
 
 _word_table_t* __aes_mix_columns( const _word_table_t* origin ) {
-    _word_table_t* destination_b = _oneptr_ciphers_word_table_init( origin->words_size, origin->word_lanes[0]->words[0]->bufsize, origin->word_lanes_size );
+    _word_table_t* destination_b = _onepointer_ciphers_word_table_init( origin->words_size, origin->word_lanes[0]->words[0]->bufsize, origin->word_lanes_size );
     for ( unsigned short i = 0; i < origin->word_lanes_size; i++ ) {
         __aes_mix_columns_calc_column_default4( origin, destination_b, i );
     }
@@ -224,7 +224,7 @@ _word_table_t* __aes_mix_columns( const _word_table_t* origin ) {
 
 _word_table_t* __aes_make_word_table484( const char* word ) {
 
-    _word_table_t* key_table = _oneptr_ciphers_word_table_init( 4, 8, 4 );
+    _word_table_t* key_table = _onepointer_ciphers_word_table_init( 4, 8, 4 );
 
     size_t keysize = sizeof(word) / sizeof(const char);
     unsigned short wl = 0;
@@ -239,7 +239,7 @@ _word_table_t* __aes_make_word_table484( const char* word ) {
         for ( unsigned int kp = k; kp < k + 9 && kpi < 8; kp++ ) {
             keypart[kpi] = word[kp];
         }
-        _oneptr_ciphers_word_table_writeto( key_table, wl, w, keypart );
+        _onepointer_ciphers_word_table_writeto( key_table, wl, w, keypart );
         if ( w == key_table->words_size - 1 ) w = 0;
         else w++;
     }
@@ -260,10 +260,10 @@ _word_table_t* __aes_make_keyexpansion( const char* word, const char* key ) {
 }
 
 aes_t* make_aes( _word_table_t* msg_table, _word_table_t* key_table ) {
-    aes_t* aes = _oneptr_ciphers_init_aes( msg_table->word_lanes[0]->words[0]->bufsize, msg_table->word_lanes_size );
+    aes_t* aes = _onepointer_ciphers_init_aes( msg_table->word_lanes[0]->words[0]->bufsize, msg_table->word_lanes_size );
 
-    strcpy( aes->msg->hash, _oneptr_ciphers_word_table_complete( msg_table ) );
-    strcpy( aes->key->hash, _oneptr_ciphers_word_table_complete( key_table ) );
+    strcpy( aes->msg->hash, _onepointer_ciphers_word_table_complete( msg_table ) );
+    strcpy( aes->key->hash, _onepointer_ciphers_word_table_complete( key_table ) );
 
     return aes;
 }

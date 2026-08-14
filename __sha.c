@@ -9,7 +9,7 @@
 #include "_blockbuf.h"
 
 
-hash_t* oneptr_ciphers_ciphers_sha( const char* msg, const unsigned short bitlength, const unsigned int rounds ) {
+hash_t* onepointer_ciphers_ciphers_sha( const char* msg, const unsigned short bitlength, const unsigned int rounds ) {
 
     static int H0 = 0x67452301;
     static int H1 = 0xEFCDBA89;
@@ -36,18 +36,18 @@ hash_t* oneptr_ciphers_ciphers_sha( const char* msg, const unsigned short bitlen
         tmp_msg[pos] = msg_length_bit[msgpos];
     }
 
-    _blockbuf_t* blkbuf_msg512 = _oneptr_ciphers_blockbuf_init( msg_length / 512, 512 );
+    _blockbuf_t* blkbuf_msg512 = _onepointer_blockbuf_init( msg_length / 512, 512 );
     unsigned long startpos_msg = 0;
     while ( blkbuf_msg512->bufferindex < blkbuf_msg512->buffercount ) {
-        _oneptr_ciphers_blockbuf_strcpy_n( blkbuf_msg512, msg, startpos_msg, 0, 512 );
-        _oneptr_ciphers_blockbuf_switchbuf( blkbuf_msg512, blkbuf_msg512->bufferindex + 1 );
+        _onepointer_blockbuf_strcpy_n( blkbuf_msg512, msg, startpos_msg, 0, 512 );
+        _onepointer_blockbuf_switchbuf( blkbuf_msg512, blkbuf_msg512->bufferindex + 1 );
         startpos_msg += 512;
     }
 
 
-    _blockbuf_t* blkbuf_word = _oneptr_ciphers_blockbuf_init( 80, 32 );
+    _blockbuf_t* blkbuf_word = _onepointer_blockbuf_init( 80, 32 );
 
-    hash_t* sha = oneptr_ciphers_ciphers_init_hash( bitlength );
+    hash_t* sha = _onepointer_hash_init( bitlength );
 
     for ( unsigned long i = 0; i < blkbuf_msg512->buffercount; i++ ) {
 
@@ -65,12 +65,12 @@ hash_t* oneptr_ciphers_ciphers_sha( const char* msg, const unsigned short bitlen
             for ( unsigned int wpos = 0; wpos < 32 && bufpos < 512; wpos++, ++bufpos ) {
                 word[wpos] = blkbuf_msg512->buffers[i]->buf[bufpos];
             }
-            _oneptr_ciphers_blockbuf_switchbuf( blkbuf_word, wbuf );
-            _oneptr_ciphers_blockbuf_strcpy( blkbuf_word, word, 0, 0 );
+            _onepointer_blockbuf_switchbuf( blkbuf_word, wbuf );
+            _onepointer_blockbuf_strcpy( blkbuf_word, word, 0, 0 );
             ++wbuf;
 
             for ( unsigned int iw = 16; iw < 80 && wbuf < blkbuf_word->buffercount; iw++, ++wbuf ) {
-                _oneptr_ciphers_blockbuf_switchbuf( blkbuf_word, wbuf );
+                _onepointer_blockbuf_switchbuf( blkbuf_word, wbuf );
                 char* tmpval = __xor_str(_word(blkbuf_word, iw-1), __xor_str(_word(blkbuf_word, iw-8), __xor_str(_word(blkbuf_word, iw-14), _word(blkbuf_word, iw-16))));
                 blkbuf_word->buf->buf = __leftrotate(tmpval, 32, 32 / iw);
             }

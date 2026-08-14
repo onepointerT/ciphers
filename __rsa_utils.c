@@ -87,7 +87,7 @@ rsa_t* __rsa_generic( struct RSA_Values* rsav ) {
         if ( d * e == 1 % (int) delta_n ) break;
     }
 
-    rsa_t* rsa = _oneptr_ciphers_init_rsa( sizeof((char*) d)/sizeof(const char) );
+    rsa_t* rsa = _onepointer_ciphers_init_rsa( sizeof((char*) d)/sizeof(const char) );
     rsa->pub->hash = (char*) (0x0 + (unsigned int) e % rsav->n);
     rsa->priv->hash = (char*) (0x0 + (unsigned int) d);
 

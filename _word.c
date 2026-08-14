@@ -4,6 +4,92 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <libm.h>
+
+
+word_t* _onepointer_merge_word( word_t* w1, word_t* w2, const merge_characters_f cb_merge_positions_f ) {
+    word_t* w = NULL;
+    if ( w1 == NULL && w2 != NULL ) {
+        w = _onpointer_charbuf_init( w2->bufsize );
+        _onepointer_charbuf_cpy_n( w, w2->buf, 0, 0, w->bufsize );
+    } else if ( w2 == NULL && w1 != NULL ) {
+        w = _onpointer_charbuf_init( w1->bufsize );
+        _onepointer_charbuf_cpy_n( w, w1->buf, 0, 0, w->bufsize );
+    } else if ( w1 != NULL && w2 != NULL ) {
+        const size_t w_bufsize = w1->bufsize > w2->bufsize ? w1->bufsize : w2->bufsize;
+        w = _onpointer_charbuf_init( w_bufsize );
+        char c1, c2 = '';
+        for ( size_t widx = 0; widx < w_bufsize; widx++ ) {
+            if ( widx >= w1->bufsize ) c1 = ' ';
+            else c1 = w1->buf[widx];
+            if ( widx >= w2->bufsize ) c2 = ' ';
+            else c2 = w2->buf[widx];
+            if ( cb_merge_positions_f == NULL ) w->buf[widx] = cb_merge_positions_f(c1, c2);
+            else return NULL;
+        }
+    } 
+    return w;
+}
+
+void _onepointer_copy_word( const word_t* _Source, word_t* _Dest ) {
+    if ( _Source == NULL ) return;
+    if ( _Dest == NULL ) _Dest = _onpointer_charbuf_init( _Source->bufsize );
+    _onepointer_charbuf_cpy( _Dest, _Source->buf, 0, 0 );
+}
+
+size_t _onepointer_word_index_contiguous( word_t* w, const size_t startpos, const int _offset ) {
+    const int _offset_position = startpos + _offset;
+    if ( _offset_position < 0 || _offset_position >= w->bufsize ) {
+        int _offset_now = _offset_position;
+        while ( _offset_now < 0 || _offset_now >= w->bufsize ) {
+            // While we have a modulo != 0, the contingent outside of the buffer is w->buffsize
+            unsigned long cont_compl_pos = (unsigned long) fmodl(_offset_position, w->bufsize);
+            while ( cont_compl_pos != 0 ) {
+                if ( _offset_now < - w->bufsize ) _offset_now += w->bufsize;
+                else if ( _offset_now > w->bufsize ) _offset_now -= w->bufsize;
+                --cont_compl_pos;
+            }
+            
+            // For every at this position we already have everything awkwardly calculated
+            // inside the buffer's limits and donot need to retest.
+            return _offset_now;
+        }
+    } else return _offset_position;
+}
+
+char _onepointer_word_getpos_contiguous( word_t* w, const size_t startpos, const int _offset ) {
+    const size_t cidx = _onepointer_word_index_contiguous( w, startpos, _offset );
+    return w->buf[cidx];
+}
+
+bool _onepointer_word_shift_word( word_t* w, const bool leftwise_not_rightwise, const size_t startpos, const int _offset, const bool startpos_untouched ) {
+
+    const size_t offset_idx = _onepointer_word_index_contiguous( w, startpos, _offset );
+    char tmp = ' ';
+    size_t pos_idx = offset_idx;
+    while ( pos_idx != offset_idx ) {
+        tmp = w->buf[pos_idx];
+        w->buf[pos_idx] = w->buf[_onepointer_word_index_contiguous( w, pos_idx, leftwise_not_rightwise ? 1 : -1 )];
+        pos_idx = _onepointer_word_index_contiguous( w, pos_idx, leftwise_not_rightwise ? -1 : 1 );
+        w->buf[pos_idx] = tmp;
+    }
+    return true;
+}
+
+bool _onepointer_word_swap_positions( word_t* w, const size_t startpos, const int _offset, const bool startpos_successive ) {
+
+}
+
+bool _onepointer_word_swap_swipping( word_t* w, const size_t startpos, const size_t swipping_width, const bool startpos_successive ) {
+
+}
+
+bool _onepointer_word_invert_positions( word_t* w, const size_t startpos_middle, const int _offset_width_one_side, const bool startpos_successive ) {
+
+}
+
+
+
 _word_array_t* _bankest_word_array_init( const unsigned short number_words, const unsigned short wordsize ) {
     _word_array_t* wa = (_word_array_t*) malloc(sizeof(_word_array_t));
 
@@ -11,16 +97,16 @@ _word_array_t* _bankest_word_array_init( const unsigned short number_words, cons
 
     wa->words = (word_t*) malloc(sizeof(word_t*)*number_words);
     for ( unsigned short nw = 0; nw < number_words; nw++ ) {
-        wa->words[nw] = _oneptr_ciphers_charbuf_init( wordsize );
+        wa->words[nw] = _onpointer_charbuf_init( wordsize );
         ++wa->words_size;
     }
 
-    _oneptr_ciphers_word_array_switch( wa, 0 );
+    _onepointer_ciphers_word_array_switch( wa, 0 );
 
     return wa;
 }
 
-bool _oneptr_ciphers_word_array_switch( _word_array_t* word_array, const unsigned short wordnum ) {
+bool _onepointer_ciphers_word_array_switch( _word_array_t* word_array, const unsigned short wordnum ) {
     if ( wordnum >= word_array->words_size ) return false;
 
     word_array->word = word_array->words[wordnum];
@@ -29,26 +115,26 @@ bool _oneptr_ciphers_word_array_switch( _word_array_t* word_array, const unsigne
     return true;
 }
 
-char* _oneptr_ciphers_word_array( _word_array_t* word_array, const unsigned short wordnum ) {
+char* _onepointer_ciphers_word_array( _word_array_t* word_array, const unsigned short wordnum ) {
     if ( wordnum >= word_array->words_size ) return "";
     return word_array->words[wordnum]->buf;
 }
 
-char* _oneptr_ciphers_word_array_complete( _word_array_t* word_array ) {
+char* _onepointer_ciphers_word_array_complete( _word_array_t* word_array ) {
     size_t bufsize_each = word_array->words[0]->bufsize;
     size_t size_wa = word_array->words_size * bufsize_each;
 
-    _charbuf_t* cb = _oneptr_ciphers_charbuf_init( size_wa );
+    _charbuf_t* cb = _onpointer_charbuf_init( size_wa );
     
     size_t cbi = 0;
     for ( unsigned int wa = 0; wa < word_array->words_size && cbi < size_wa; wa++, cbi = cbi + bufsize_each ) {
-        _oneptr_ciphers_charbuf_cpy_n( cb, word_array->words[wa]->buf, 0, cbi, bufsize_each );
+        _onepointer_charbuf_cpy_n( cb, word_array->words[wa]->buf, 0, cbi, bufsize_each );
     }
     
     return cb->buf;
 }
 
-char* _oneptr_ciphers_word_array_word( _word_array_t* word_array ) {
+char* _onepointer_ciphers_word_array_word( _word_array_t* word_array ) {
 
     const unsigned short wordssize = word_array->words_size;
     const unsigned short wordlength = word_array->words[0]->bufsize;
@@ -66,12 +152,12 @@ char* _oneptr_ciphers_word_array_word( _word_array_t* word_array ) {
     return word;
 }
 
-void _oneptr_ciphers_word_array_writeto( _word_array_t* word_array, const unsigned short wordnum, const char* _Source ) {
+void _onepointer_ciphers_word_array_writeto( _word_array_t* word_array, const unsigned short wordnum, const char* _Source ) {
     if ( wordnum >= word_array->words_size ) return;
-    _oneptr_ciphers_charbuf_cpy_n( word_array->words[wordnum], _Source, 0, 0, word_array->words[wordnum]->bufsize );
+    _onepointer_charbuf_cpy_n( word_array->words[wordnum], _Source, 0, 0, word_array->words[wordnum]->bufsize );
 }
 
-_word_table_t* _oneptr_ciphers_word_table_init( const unsigned short number_words, const unsigned short wordsize, const unsigned short number_word_lanes ) {
+_word_table_t* _onepointer_ciphers_word_table_init( const unsigned short number_words, const unsigned short wordsize, const unsigned short number_word_lanes ) {
     _word_table_t* wt = (_word_table_t*) malloc(sizeof(_word_table_t));
 
     wt->word_lanes_size = 0;
@@ -79,16 +165,16 @@ _word_table_t* _oneptr_ciphers_word_table_init( const unsigned short number_word
 
     wt->word_lanes = (_word_array_t*) malloc(sizeof(_word_array_t*)*number_word_lanes);
     for ( unsigned short nwl = 0; nwl < number_word_lanes; nwl++ ) {
-        wt->word_lanes[nwl] = _oneptr_ciphers_word_array_init( number_words, wordsize );
+        wt->word_lanes[nwl] = _onepointer_ciphers_word_array_init( number_words, wordsize );
         ++wt->word_lanes_size;
     }
 
-    _oneptr_ciphers_word_table_switch2( wt, 0, 0 );
+    _onepointer_ciphers_word_table_switch2( wt, 0, 0 );
 
     return wt;
 }
 
-bool _oneptr_ciphers_word_table_switch( _word_table_t* word_table, const unsigned short wordlanenum ) {
+bool _onepointer_ciphers_word_table_switch( _word_table_t* word_table, const unsigned short wordlanenum ) {
     if ( wordlanenum >= word_table->word_lanes_size ) return false;
 
     word_table->word_lane = word_table->word_lanes[wordlanenum];
@@ -97,40 +183,40 @@ bool _oneptr_ciphers_word_table_switch( _word_table_t* word_table, const unsigne
     return true;
 }
 
-bool _oneptr_ciphers_word_table_switch2( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
-    if ( ! _oneptr_ciphers_word_table_switch( word_table, wordlanenum ) ) return false;
-    return _oneptr_ciphers_word_array_switch( word_table->word_lane, wordnum );
+bool _onepointer_ciphers_word_table_switch2( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
+    if ( ! _onepointer_ciphers_word_table_switch( word_table, wordlanenum ) ) return false;
+    return _onepointer_ciphers_word_array_switch( word_table->word_lane, wordnum );
 }
 
-char* _oneptr_ciphers_word_table( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
+char* _onepointer_ciphers_word_table( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
     if ( wordlanenum >= word_table->word_lanes_size || wordnum >= word_table->words_size ) return "";
     return word_table->word_lanes[wordlanenum]->words[wordnum]->buf;
 }
 
-char* _oneptr_ciphers_word_table_lane( _word_table_t* word_table, const unsigned short wordlanenum ) {
+char* _onepointer_ciphers_word_table_lane( _word_table_t* word_table, const unsigned short wordlanenum ) {
     if ( wordlanenum >= word_table->word_lanes_size ) return "";
-    return _oneptr_ciphers_word_array_word( word_table->word_lanes[wordlanenum] );
+    return _onepointer_ciphers_word_array_word( word_table->word_lanes[wordlanenum] );
 }
 
-char* _oneptr_ciphers_word_table_complete( _word_table_t* word_table ) {
+char* _onepointer_ciphers_word_table_complete( _word_table_t* word_table ) {
     size_t bufsize_each = word_table->word_lanes[0]->words[0]->bufsize;
     size_t wordsize = word_table->word_lanes_size * word_table->words_size * bufsize_each;
 
-    _charbuf_t* cb = _oneptr_ciphers_charbuf_init( wordsize );
+    _charbuf_t* cb = _onpointer_charbuf_init( wordsize );
 
     unsigned int cbi = 0;
     for ( unsigned int wtl = 0; wtl < word_table->word_lanes && cbi < wordsize; wtl++, cbi = cbi + bufsize_each ) {
-        char* word_lane = _oneptr_ciphers_word_table_lane( word_table, wtl );
-        _oneptr_ciphers_charbuf_cpy_n( cb, word_lane, 0, cbi, bufsize_each );
+        char* word_lane = _onepointer_ciphers_word_table_lane( word_table, wtl );
+        _onepointer_charbuf_cpy_n( cb, word_lane, 0, cbi, bufsize_each );
         
     }
 
     return cb->buf;
 }
 
-void _oneptr_ciphers_word_table_writeto( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum, const char* _Source ) {
+void _onepointer_ciphers_word_table_writeto( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum, const char* _Source ) {
     if ( wordlanenum >= word_table->word_lanes_size || wordnum >= word_table->word_lanes[wordlanenum]->words_size ) return;
-   _oneptr_ciphers_word_array_writeto( word_table->word_lanes[wordlanenum], wordnum, _Source );
+   _onepointer_ciphers_word_array_writeto( word_table->word_lanes[wordlanenum], wordnum, _Source );
 }
 
 

@@ -1,6 +1,6 @@
 
 #include "ciphers.h"
 
-hash_t* oneptr_ciphers_ciphers_sha3( const char* msg ) {
-    return oneptr_ciphers_ciphers_sha( msg, 180, 3 );
+hash_t* onepointer_ciphers_ciphers_sha3( const char* msg ) {
+    return onepointer_ciphers_ciphers_sha( msg, 180, 3 );
 }
