@@ -2,8 +2,8 @@ cmake_minimum_required( VERSION 3.28 )
 project( onepointer-ciphers C )
 
 set( PROJECT_NAME "onepointer-ciphers" )
-set( PROJECT_VERSION "0.0.2-dev1" )
-set( PROJECT_DESCRIPTION "Securement digest and encryption ciphers from OnePointerT." )
+set( PROJECT_VERSION "0.0.2-dev2" )
+set( PROJECT_DESCRIPTION "Securement digest and encryption ciphers and buffers from OnePointerT." )
 
 set( CMAKE_C_STANDARD 17 )
 set( CMAKE_CXX_STANDARD 23 )
@@ -18,6 +18,10 @@ add_subdirectory( lib/libm )
 include_directories( ${PROJECT_SOURCE_DIR}/lib/libm/src/ce-libm )
 include_directories( ${PROJECT_SOURCE_DIR}/lib/libm/src/ce-libprim )
 include_directories( ${PROJECT_SOURCE_DIR}/lib/libm/lib/endian_h )
+
+file( GLOB onepointer_WORDBUF_SRCFIILES_C ${PROJECT_SOURCE_DIR}/_*.c )
+add_library( onepointerc_wordbuf STATIC ${onepointer_WORDBUF_SRCFIILES_C} )
+target_link_libraries( onepointerc_wordbuf m_ce prim_ce )
 
 file( GLOB onepointer_CIPHERS_SRCFILES_C ${PROJECT_SOURCE_DIR}/*.c )
 add_library( onepointerc_ciphers STATIC ${onepointer_CIPHERS_SRCFILES_C} )
