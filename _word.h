@@ -18,9 +18,17 @@ typedef char (*merge_characters_f)(char, char);
 word_t* _onepointer_merge_word( word_t* w1, word_t* w2, const merge_characters_f cb_merge_positions_f );
 void _onepointer_copy_word( const word_t* _Source, word_t* _Dest );
 size_t _onepointer_word_index_contiguous( word_t* w, const size_t startpos, const int _offset, const bool startpos_successive );
+size_t _onepointer_word_index_count_contiguous( word_t* w, const size_t startpos, const size_t endpos );
 char _onepointer_word_getpos_contiguous( word_t* w, const size_t startpos, const int _offset );
-bool _onepointer_word_shift_word( word_t* w, const bool leftwise_not_rightwise, const size_t startpos, const int _offset, const bool startpos_untouched );
+bool _onepointer_word_shift_word( word_t* w, const bool leftwise_not_rightwise, const size_t startpos, const int _offset, const bool startpos_untouched, const bool asymetrically );
+void _onepointer_word_swap_positions_at( word_t* w, const size_t pos1, const size_t pos2 );
+void _onepointer_word_swap_position_at( word_t* w, const size_t pos1, const bool startpos_successive, const bool start_left_not_right );
+void _onepointer_word_swap_positions_asymetrically_at( word_t* w, const size_t pos1, const size_t pos2, const bool leftwise_not_rightwise_shift, const bool swap_current_positions_symetrically_too );
 bool _onepointer_word_swap_positions( word_t* w, const size_t startpos, const int _offset, const bool startpos_successive );
+bool _onepointer_word_swap_3shift( word_t* w, const size_t startpos, const int _offset, const int _shifting_offset, const bool startpos_successive );
+bool _onepointer_word_swap_3( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true );
+bool _onepointer_word_swap_n( word_t* w, const size_t startpos, const size_t _shift_width, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true );
+bool _onepointer_word_swap_zig( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true );
 bool _onepointer_word_swap_swipping( word_t* w, const size_t startpos, const size_t swipping_width, const bool startpos_successive );
 bool _onepointer_word_invert_positions( word_t* w, const size_t startpos_middle, const int _offset_width_one_side, const bool startpos_successive );
 

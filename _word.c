@@ -37,7 +37,7 @@ void _onepointer_copy_word( const word_t* _Source, word_t* _Dest ) {
     _onepointer_charbuf_cpy( _Dest, _Source->buf, 0, 0 );
 }
 
-size_t _onepointer_word_index_contiguous( word_t* w, const size_t startpos, const int _offset ) {
+size_t _onepointer_word_index_contiguous( word_t* w, const size_t startpos, const int _offset, const bool startpos_successive ) {
     const int _offset_position = startpos + _offset;
     if ( _offset_position < 0 || _offset_position >= w->bufsize ) {
         int _offset_now = _offset_position;
@@ -49,34 +49,141 @@ size_t _onepointer_word_index_contiguous( word_t* w, const size_t startpos, cons
                 else if ( _offset_now > w->bufsize ) _offset_now -= w->bufsize;
                 --cont_compl_pos;
             }
-            
-            // For every at this position we already have everything awkwardly calculated
-            // inside the buffer's limits and donot need to retest.
-            return _offset_now;
         }
+
+        // For every at this position we already have everything awkwardly calculated the buffer
+        // inside the buffer's limits and donot need to retest.
+        if ( startpos + _offset_now < 0 || startpos + _offset_now >= w->bufsize )
+            return _onepointer_word_index_contiguous( w, startpos, _offset_now, startpos_successive );
+        else if ( _offset_now == 0 && startpos_successive ) return _onepointer_word_index_contiguous( w, startpos, _offset < 0 ? -1 : 1, true );
+        else return startpos + _offset_now;
     } else return _offset_position;
 }
 
+size_t _onepointer_word_index_count_contiguous( word_t* w, const size_t startpos, const size_t endpos ) {
+    const size_t w_idx_startpos = _onepointer_word_index_contiguous( w, startpos, 0, false );
+    const size_t w_idx_endpos = _onepointer_word_index_contiguous( w, endpos, 0, false );
+    const size_t w_idx_between = _onepointer_word_index_contiguous( w, w_idx_startpos, w_idx_endpos - w_idx_startpos, false );
+    return _onepointer_word_index_contiguous( w, w_idx_between, startpos + w_idx_between, false );
+}
+
 char _onepointer_word_getpos_contiguous( word_t* w, const size_t startpos, const int _offset ) {
-    const size_t cidx = _onepointer_word_index_contiguous( w, startpos, _offset );
+    const size_t cidx = _onepointer_word_index_contiguous( w, startpos, _offset, false );
     return w->buf[cidx];
 }
 
 bool _onepointer_word_shift_word( word_t* w, const bool leftwise_not_rightwise, const size_t startpos, const int _offset, const bool startpos_untouched ) {
 
-    const size_t offset_idx = _onepointer_word_index_contiguous( w, startpos, _offset );
+    const size_t offset_idx = _onepointer_word_index_contiguous( w, startpos, _offset, startpos_untouched );
     char tmp = ' ';
     size_t pos_idx = offset_idx;
     while ( pos_idx != offset_idx ) {
         tmp = w->buf[pos_idx];
         w->buf[pos_idx] = w->buf[_onepointer_word_index_contiguous( w, pos_idx, leftwise_not_rightwise ? 1 : -1 )];
-        pos_idx = _onepointer_word_index_contiguous( w, pos_idx, leftwise_not_rightwise ? -1 : 1 );
+        pos_idx = _onepointer_word_index_contiguous( w, pos_idx, leftwise_not_rightwise ? -1 : 1, startpos_untouched );
         w->buf[pos_idx] = tmp;
     }
     return true;
 }
 
-bool _onepointer_word_swap_positions( word_t* w, const size_t startpos, const int _offset, const bool startpos_successive ) {
+void _onepointer_word_swap_positions_at( word_t* w, const size_t pos1, const size_t pos2 ) {
+    const size_t w_idx = _onepointer_word_index_contiguous(w, pos1, 0, false);
+    const size_t w_idx_other_side = _onepointer_word_index_contiguous(w, pos2, 0, false);
+    char tmp = w->buf[w_idx];
+    w->buf[w_idx] = w->buf[w_idx_other_side];
+    w->buf[w_idx_other_side] = tmp;
+}
+
+void _onepointer_word_swap_position_at( word_t* w, const size_t pos1, const bool startpos_successive, const bool start_left_not_right ) {
+    const size_t w_idx_minus1 = _onepointer_word_index_contiguous(w, pos1, -1, false);
+    const size_t w_idx_plus1 = _onepointer_word_index_contiguous(w, pos1, 1, false);
+    
+    _onepointer_word_swap_positions_at( w, ! startpos_successive ? pos1 : (start_left_not_right ? w_idx_minus1 : w_idx_plus1)
+                                      , start_left_not_right ? w_idx_plus1 : w_idx_minus1 );
+    if ( ! startpos_successive ) _onepointer_word_swap_positions_at( w, pos1, start_left_not_right ? w_idx_minus1 : w_idx_plus1 );
+    _onepointer_word_swap_positions_at( w, ! startpos_successive ? pos1 : (start_left_not_right ? w_idx_plus1 : w_idx_minus1)
+                                      , start_left_not_right ? w_idx_minus1 : w_idx_plus1 );
+}
+
+void _onepointer_word_swap_positions_asymetrically_at( word_t* w, const size_t pos1, const size_t pos2
+                                                     , const bool leftwise_not_rightwise_shift, const bool swap_current_positions_symetrically_too
+) {
+    // Get the indices for asymetric swapping positions and swap 
+    const size_t w_idx = _onepointer_word_index_contiguous( w, pos1, 0, false );
+    const size_t w_idx_beneath = _onepointer_word_index_contiguous( w, pos1, 1, false );
+    const size_t w_idx_other = _onepointer_word_index_contiguous( w, pos2, 0, false );
+    const size_t w_idx_other_beneath = _onepointer_word_index_contiguous( w, pos2, -1, false );
+
+    _onepointer_word_swap_positions_at( w, w_idx, w_idx_beneath );
+    _onepointer_word_swap_positions_at( w, w_idx_other, w_idx_other_beneath );
+
+    if ( swap_current_positions_symetrically_too ) _onepointer_word_swap_positions_at( w, w_idx, w_idx_other );
+}
+
+bool _onepointer_word_swap_positions( word_t* w, const size_t startpos, const int _offset, const bool startpos_successive, const bool asymetrically ) {
+    
+    const size_t c_idx = _onepointer_word_index_contiguous( w, startpos, _offset, startpos_successive );
+    const size_t c_idx_other_side = _onepointer_word_index_contiguous( w, startpos, - _offset, startpos_successive );
+
+    if ( _offset == 0 && startpos_successive ) {
+        _onepointer_word_swap_positions_at( w, _onepointer_word_index_contiguous(w, startpos-1, 0, false)
+                                             , _onepointer_word_index_contiguous(w, startpos+1, 0, false) );
+    } else if ( c_idx != c_idx_other_side) {
+        size_t w_len_between = _onepointer_word_index_count_contiguous( w, c_idx, c_idx_other_side );
+
+        if ( w_len_between == 0 )
+            return _onepointer_word_swap_positions( w, startpos, -1, true, asymetrically );
+        while ( w_len_between != 0 ) {
+            if ( asymetrically ) {
+                size_t w_idx_0 = c_idx;
+                while ( w_idx_0 != startpos ) {
+                    _onepointer_word_swap_positions_asymetrically_at( w, w_idx_0
+                                                                    , startpos_successive 
+                                                                            ? _onepointer_word_index_contiguous( w, startpos, w_idx_0, false )
+                                                                            : _onepointer_word_index_contiguous( w, startpos, -1 + w_idx_0, false )
+                                                                    , false, true
+                    );
+
+                    w_idx_0 = _onepointer_word_index_contiguous( w, w_idx_0, 1, false );
+                }
+            } else {
+                size_t w_idx_offset = 0;
+
+                size_t cidx = _onepointer_word_index_contiguous(w, c_idx, w_idx_offset, false);
+                while ( cidx != startpos ) {
+                    size_t cidx_other_side = _onepointer_word_index_contiguous(w, c_idx_other_side, - w_idx_offset, false);
+                    _onepointer_word_swap_positions_at( w, cidx, cidx_other_side );
+                    ++w_idx_offset;
+                    cidx = _onepointer_word_index_contiguous(w, c_idx, w_idx_offset, false);
+                }
+            }
+            
+            if ( asymetrically ) {
+                _onepointer_word_swap_position_at( w, startpos, startpos_successive, true );
+            }
+        }
+
+    } else if ( c_idx == c_idx_other_side ) {
+        return _onepointer_word_swap_positions( w, startpos, c_idx, false, asymetrically );
+    } else {
+        return _onepointer_word_swap_n( w, startpos, (unsigned long) fmodl(c_idx + c_idx_other_side, 2), _offset, false, false );
+    }
+    return true;
+}
+
+bool _onepointer_word_swap_3shift( word_t* w, const size_t startpos, const int _offset, const int _shifting_offset, const bool startpos_successive ) {
+
+}
+
+bool _onepointer_word_swap_3( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true ) {
+
+}
+
+bool _onepointer_word_swap_n( word_t* w, const size_t startpos, const size_t _shift_width, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true ) {
+
+}
+
+bool _onepointer_word_swap_zig( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true ) {
 
 }
 
