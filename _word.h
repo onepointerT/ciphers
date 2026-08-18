@@ -27,27 +27,31 @@ void _onepointer_word_swap_positions_asymetrically_at( word_t* w, const size_t p
 bool _onepointer_word_swap_positions( word_t* w, const size_t startpos, const int _offset, const bool startpos_successive );
 bool _onepointer_word_swap_3shift( word_t* w, const size_t startpos, const int _offset, const int _shifting_offset, const bool startpos_successive );
 bool _onepointer_word_swap_3( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true );
-bool _onepointer_word_swap_n( word_t* w, const size_t startpos, const size_t _shift_width, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true );
-bool _onepointer_word_swap_zig( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true );
-bool _onepointer_word_swap_swipping( word_t* w, const size_t startpos, const size_t swipping_width, const bool startpos_successive );
+bool _onepointer_word_swap_n( word_t* w, const size_t startpos, const size_t _shift_width, const int _offset, const bool swap_only
+                        , const bool clap_sides, const bool shift_sides_if_clap_true );
+bool _onepointer_word_swap_sides( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true );
+bool _onepointer_word_shift_zig( word_t* w, const size_t startpos, const int _offset, const bool both_sides );
+bool _onepointer_word_swap_swipping( word_t* w, const size_t startpos, const size_t swipping_width, const int _offset
+                            , const bool startpos_successive, const bool shift_then_swap_nor_swap_then_shift
+);
 bool _onepointer_word_invert_positions( word_t* w, const size_t startpos_middle, const int _offset_width_one_side, const bool startpos_successive );
 
-typedef struct _onepointer_ciphers_word_array {
+typedef struct _onepointer_word_array {
     word_t** words;
     word_t* word;
     unsigned short words_size;
     unsigned short words_index;
 } _word_array_t;
 
-_word_array_t* _onepointer_ciphers_word_array_init( const unsigned short number_words, const unsigned short wordsize );
-bool _onepointer_ciphers_word_array_switch( _word_array_t* word_array, const unsigned short wordnum );
-char* _onepointer_ciphers_word_array( _word_array_t* word_array, const unsigned short wordnum );
-char* _onepointer_ciphers_word_array_complete( _word_array_t* word_array );
-char* _onepointer_ciphers_word_array_word( _word_array_t* word_array );
-void _onepointer_ciphers_word_array_writeto( _word_array_t* word_array, const unsigned short wordnum, const char* _Source );
+_word_array_t* _onepointer_word_array_init( const unsigned short number_words, const unsigned short wordsize );
+bool _onepointer_word_array_switch( _word_array_t* word_array, const unsigned short wordnum );
+char* _onepointer_word_array( _word_array_t* word_array, const unsigned short wordnum );
+char* _onepointer_word_array_complete( _word_array_t* word_array );
+char* _onepointer_word_array_word( _word_array_t* word_array );
+void _onepointer_word_array_writeto( _word_array_t* word_array, const unsigned short wordnum, const char* _Source );
 
 
-typedef struct _onepointer_ciphers_word_table {
+typedef struct _onepointer_word_table {
     _word_array_t** word_lanes;
     _word_array_t* word_lane;
     unsigned short word_lanes_size;
@@ -55,13 +59,13 @@ typedef struct _onepointer_ciphers_word_table {
     unsigned short words_size;
 } _word_table_t;
 
-_word_table_t* _onepointer_ciphers_word_table_init( const unsigned short number_words, const unsigned short wordsize, const unsigned short number_word_lanes );
-bool _onepointer_ciphers_word_table_switch( _word_table_t* word_table, const unsigned short wordlanenum );
-bool _onepointer_ciphers_word_table_switch2( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum );
-char* _onepointer_ciphers_word_table( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum );
-char* _onepointer_ciphers_word_table_lane( _word_table_t* word_table, const unsigned short wordlanenum );
-char* _onepointer_ciphers_word_table_complete( _word_table_t* word_table );
-void _onepointer_ciphers_word_table_writeto( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum, const char* _Source );
+_word_table_t* _onepointer_word_table_init( const unsigned short number_words, const unsigned short wordsize, const unsigned short number_word_lanes );
+bool _onepointer_word_table_switch( _word_table_t* word_table, const unsigned short wordlanenum );
+bool _onepointer_word_table_switch2( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum );
+char* _onepointer_word_table( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum );
+char* _onepointer_word_table_lane( _word_table_t* word_table, const unsigned short wordlanenum );
+char* _onepointer_word_table_complete( _word_table_t* word_table );
+void _onepointer_word_table_writeto( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum, const char* _Source );
 
 
 unsigned short _getpos_laneshifting_bitblocks( const unsigned short bitblocks, const unsigned short shifting_modificator, const unsigned short start_pos, const bool shift_direction_left );

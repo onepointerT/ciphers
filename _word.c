@@ -173,31 +173,193 @@ bool _onepointer_word_swap_positions( word_t* w, const size_t startpos, const in
 
 bool _onepointer_word_swap_3shift( word_t* w, const size_t startpos, const int _offset, const int _shifting_offset, const bool startpos_successive ) {
 
+    bool failed = false;
+    int _offset_now = _offset;
+    size_t w_idx_0 = _onepointer_word_index_contiguous( w, startpos, _offset_now, startpos_successive );
+    while ( _offset_now != 0 ) {
+        if ( ! _onepointer_word_swap_3( w, _onepointer_word_index_contiguous( w, w_idx_0, 0, false ), 0, false, false ) )
+            return false;
+        if ( _shifting_offset > 0 )
+            if ( ! _onepointer_word_shift_word( w, false, _onepointer_word_index_contiguous( w, w_idx_0, 1, false ), _shifting_offset, startpos_successive ) )
+                return false;
+        ++_offset_now;
+        w_idx_0 = _onepointer_word_index_contiguous( w, w_idx_0, 1, false );
+    }
+    return true;
 }
 
 bool _onepointer_word_swap_3( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true ) {
+    size_t w_idx_0 = _onepointer_word_index_contiguous( w, _onepointer_word_index_contiguous(w, startpos, _offset, false ), 0, false );
+    _onepointer_word_shift_word( w, _offset < 0, w_idx_0
+                        , _onepointer_word_index_contiguous(w, w_idx_0 + 3, 0, false)
+                        , false );
+    if ( clap_sides ) {
+        size_t w_idx_between = _onepointer_word_index_contiguous( w, _onepointer_word_index_contiguous( w, startpos, 0, false )
+                                        , _onepointer_word_index_contiguous( w, startpos, _offset, false ), false );
+        size_t w_idx_between_middle = (size_t) fabsf(w_idx_between / 2);
+        _onepointer_word_invert_positions( w, w_idx_between_middle, w_idx_between - w_idx_between_middle, true );
 
+        if ( shift_sides_if_clap_true ) {
+            _onepointer_word_shift_word( w, false, w_idx_between_middle, - (w_idx_between - w_idx_between_middle), true );
+            _onepointer_word_shift_word( w, false, w_idx_between_middle, w_idx_between - w_idx_between_middle, true );
+        }
+    }
+    return true;
 }
 
-bool _onepointer_word_swap_n( word_t* w, const size_t startpos, const size_t _shift_width, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true ) {
+bool _onepointer_word_swap_n( word_t* w, const size_t startpos, const size_t _shift_width, const int _offset, const bool swap_only, const bool clap_sides, const bool shift_sides_if_clap_true ) {
 
+    size_t w_idx_0 = _onepointer_word_index_contiguous( w, startpos, _offset, true );
+    int _offset_rest = _offset;
+    while ( w_idx_0 != startpos ) {
+        int w_idx_len = _onepointer_word_index_count_contiguous( w, w_idx_0, _onepointer_word_index_contiguous(w, w_idx_0, -_offset_rest, false) );
+        _onepointer_word_swap_positions( w, w_idx_0, w_idx_len, false, false );
+
+        if ( _shift_width > 0 ) {
+            size_t _shift_width_rest = _shift_width;
+            while ( _shift_width_rest != 0 ) {
+                _onepointer_word_shift_word( w, _offset > 0, w_idx_0, w_idx_len, true );
+                --_shift_width_rest;
+            }
+        }
+        _offset < 0 ? ++_offset_rest : --_offset_rest;
+        w_idx_0 = _onepointer_word_index_contiguous( w, w_idx_0, _offset_rest, false );
+    }
+
+    if ( swap_only ) return true;
+    else if ( ! _onepointer_word_swap_n( w, startpos, _shift_width, - _offset, true, clap_sides, shift_sides_if_clap_true ) ) return false;
+    else if ( clap_sides && _onepointer_word_swap_sides( w, startpos, _offset, clap_sides, shift_sides_if_clap_true) ) {
+        int _new_offset = _onepointer_word_index_count_contiguous( w, startpos
+                                , _onepointer_word_index_contiguous( w
+                                            , _onepointer_word_index_contiguous( w, startpos, _offset, true ), 1, false )
+                        );
+        return _onepointer_word_swap_n( w, startpos, _shift_width, _new_offset, false, clap_sides, shift_sides_if_clap_true );
+    }
+    return false;
 }
 
-bool _onepointer_word_swap_zig( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true ) {
+bool _onepointer_word_swap_sides( word_t* w, const size_t startpos, const int _offset, const bool clap_sides, const bool shift_sides_if_clap_true ) {
+    word_t* l = _onpointer_charbuf_init( _offset > 0 ? _offset : - _offset );
+    word_t* r = _onpointer_charbuf_init( _offset > 0 ? _offset : - _offset );
+    
+    int _offset_rest = _offset;
+    size_t w_idx_l = _onepointer_word_index_contiguous( w, startpos, _offset, true );
+    size_t w_idx_r = _onepointer_word_index_contiguous( w, startpos, - _offset, true );
+    size_t idx_rest = _offset > 0 ? _offset : - _offset;
+    while ( _offset_rest != 0 ) {
+        l->buf[idx_rest] = w->buf[w_idx_l];
+        r->buf[idx_rest] = w->buf[w_idx_r];
+        _offset > 0 ? --_offset_rest : ++_offset_rest;
+        w_idx_l = _onepointer_word_index_contiguous( w, startpos, _offset_rest, true );
+        w_idx_r = _onepointer_word_index_contiguous( w, startpos, - _offset_rest, true );
+        --idx_rest;
+    }
 
+    _offset_rest = _offset;
+    w_idx_l = _onepointer_word_index_contiguous( w, startpos, _offset, true );
+    w_idx_r = _onepointer_word_index_contiguous( w, startpos, - _offset, true );
+    idx_rest = _offset > 0 ? _offset : - _offset;
+    if ( clap_sides ) {
+        while ( _offset_rest != 0 ) {
+            w->buf[w_idx_l] = r->buf[idx_rest];
+            w->buf[w_idx_r] = l->buf[idx_rest];
+            _offset > 0 ? --_offset_rest : ++_offset_rest;
+            w_idx_l =  _onepointer_word_index_contiguous( w, startpos, _offset_rest, true );
+            w_idx_r = _onepointer_word_index_contiguous( w, startpos, - _offset_rest, true );
+            --idx_rest;
+        }
+    } else {
+        w_idx_r = _onepointer_word_index_contiguous( w, startpos, 1, true );
+        while ( idx_rest != 0 ) {
+            w->buf[w_idx_l] = r->buf[idx_rest-(_offset_rest > 0 ? _offset_rest : - _offset_rest)];
+            w->buf[w_idx_r] = l->buf[idx_rest];
+
+            w_idx_l = _onepointer_word_index_contiguous( w, w_idx_l, 1, false );
+            w_idx_r = _onepointer_word_index_contiguous( w, w_idx_r, -1, false );
+            --idx_rest;
+        }
+    }
+
+    if ( clap_sides && shift_sides_if_clap_true )
+        return _onepointer_word_shift_zig( w, startpos, _offset, true );
+    return true;
 }
 
-bool _onepointer_word_swap_swipping( word_t* w, const size_t startpos, const size_t swipping_width, const bool startpos_successive ) {
+bool _onepointer_word_shift_zig( word_t* w, const size_t startpos, const int _offset, const bool both_sides ) {
+    int _offset_now = 0;
+    int _offset_rest = _offset;
+    while ( _offset_now != _offset ) {
+        size_t pos_offset = _onepointer_word_index_contiguous( w, startpos, _offset_now, false );
+        if ( both_sides ) {
+            size_t w_idx_0 = _onepointer_word_index_contiguous( w, startpos, _offset_rest, false );
+            _onepointer_word_shift_word( w, _offset_now > 0, w_idx_0, _offset_rest, false );
+            size_t w_idx_0i = _onepointer_word_index_contiguous( w, startpos, -_offset_rest, false );
+            _onepointer_word_shift_word( w, _offset_now > 0, w_idx_0i, -_offset_rest, false );
+        } else {
+            size_t w_idx_0 = _onepointer_word_index_contiguous( w, startpos, _offset_rest, false );
+            _onepointer_word_shift_word( w, _offset_now > 0, w_idx_0, _offset_rest, false );
+        }
+        _offset < 0 ? --_offset_now, ++_offset_rest : ++_offset_now, --_offset_rest;
+    }
+    return true;
+}
 
+bool _onepointer_word_swap_swipping( word_t* w, const size_t startpos, const size_t swipping_width, const int _offset
+                                   , const bool startpos_successive, const bool shift_then_swap_nor_swap_then_shift
+) {
+
+    size_t w_idx_0 = _onepointer_word_index_contiguous( w, startpos, _offset, startpos_successive );
+
+    char tmp = _onepointer_word_getpos_contiguous( w, w_idx_0, 0 );
+    if ( shift_then_swap_nor_swap_then_shift ) {
+        _onepointer_word_shift_word( w, _offset < 0, w_idx_0, swipping_width, false );
+        w->buf[_onepointer_word_index_contiguous( w, w_idx_0, swipping_width, false )] = tmp;
+
+        size_t swipping_width_rest = swipping_width;
+        size_t w_idx_swi0 = _onepointer_word_index_contiguous( w, w_idx_0, _offset < 0 ? 1 : -1, true );
+        while ( swipping_width_rest != 0 ) {
+            w_idx_swi0 = _onepointer_word_index_contiguous( w, w_idx_swi0, _offset < 0 ? 1 : -1, true );
+            size_t w_idx_swiOther = _onepointer_word_index_contiguous( w, w_idx_0, _offset < 0 ? swipping_width_rest : - swipping_width_rest, true );
+            _onepointer_word_swap_positions_at( w, w_idx_swi0, w_idx_swiOther );
+            --swipping_width_rest;
+        }
+    } else {
+        size_t swipping_width_rest = swipping_width;
+        size_t w_idx_swi0 = _onepointer_word_index_contiguous( w, w_idx_0, _offset < 0 ? 1 : -1, true );
+        while ( swipping_width_rest != 0 ) {
+            w_idx_swi0 = _onepointer_word_index_contiguous( w, w_idx_swi0, _offset < 0 ? 1 : -1, true );
+            size_t w_idx_swiOther = _onepointer_word_index_contiguous( w, w_idx_0, _offset < 0 ? swipping_width_rest : - swipping_width_rest, true );
+            _onepointer_word_swap_positions_at( w, w_idx_swi0, w_idx_swiOther );
+            --swipping_width_rest;
+        }
+        _onepointer_word_shift_word( w, _offset < 0, w_idx_0, swipping_width, false );
+        w->buf[_onepointer_word_index_contiguous( w, w_idx_0, swipping_width, false )] = tmp;
+    }
+
+    return _onepointer_word_swap_swipping( w, startpos, swipping_width - 1, _offset, startpos_successive, shift_then_swap_nor_swap_then_shift );
 }
 
 bool _onepointer_word_invert_positions( word_t* w, const size_t startpos_middle, const int _offset_width_one_side, const bool startpos_successive ) {
 
+    if ( _offset_width_one_side == 0 ) {
+        if ( ! startpos_successive ) if ( ! _onepointer_word_swap_3( w, startpos_middle, -1, false, false ) ) return false;
+        _onepointer_word_swap_positions_at( w, _onepointer_word_index_contiguous(w, startpos_middle, -1, false)
+                                             , _onepointer_word_index_contiguous(w, startpos_middle, 1, false)
+        );
+        return true;
+    }
+
+    size_t w_idx_0 = _onepointer_word_index_contiguous( w, startpos_middle, _offset_width_one_side, startpos_successive );
+    size_t w_idx_r = _onepointer_word_index_contiguous( w, startpos_middle, - _offset_width_one_side, startpos_successive );
+
+    _onepointer_word_swap_positions_at( w, w_idx_0, w_idx_r );
+
+    return _onepointer_word_invert_positions( w, startpos_middle, _offset_width_one_side + (_offset_width_one_side < 0 ? 1 : -1), startpos_successive )
 }
 
 
 
-_word_array_t* _bankest_word_array_init( const unsigned short number_words, const unsigned short wordsize ) {
+_word_array_t* _onepointer_word_array_init( const unsigned short number_words, const unsigned short wordsize ) {
     _word_array_t* wa = (_word_array_t*) malloc(sizeof(_word_array_t));
 
     wa->words_size = 0;
@@ -208,12 +370,12 @@ _word_array_t* _bankest_word_array_init( const unsigned short number_words, cons
         ++wa->words_size;
     }
 
-    _onepointer_ciphers_word_array_switch( wa, 0 );
+    _onepointer_word_array_switch( wa, 0 );
 
     return wa;
 }
 
-bool _onepointer_ciphers_word_array_switch( _word_array_t* word_array, const unsigned short wordnum ) {
+bool _onepointer_word_array_switch( _word_array_t* word_array, const unsigned short wordnum ) {
     if ( wordnum >= word_array->words_size ) return false;
 
     word_array->word = word_array->words[wordnum];
@@ -222,12 +384,12 @@ bool _onepointer_ciphers_word_array_switch( _word_array_t* word_array, const uns
     return true;
 }
 
-char* _onepointer_ciphers_word_array( _word_array_t* word_array, const unsigned short wordnum ) {
+char* _onepointer_word_array( _word_array_t* word_array, const unsigned short wordnum ) {
     if ( wordnum >= word_array->words_size ) return "";
     return word_array->words[wordnum]->buf;
 }
 
-char* _onepointer_ciphers_word_array_complete( _word_array_t* word_array ) {
+char* _onepointer_word_array_complete( _word_array_t* word_array ) {
     size_t bufsize_each = word_array->words[0]->bufsize;
     size_t size_wa = word_array->words_size * bufsize_each;
 
@@ -241,7 +403,7 @@ char* _onepointer_ciphers_word_array_complete( _word_array_t* word_array ) {
     return cb->buf;
 }
 
-char* _onepointer_ciphers_word_array_word( _word_array_t* word_array ) {
+char* _onepointer_word_array_word( _word_array_t* word_array ) {
 
     const unsigned short wordssize = word_array->words_size;
     const unsigned short wordlength = word_array->words[0]->bufsize;
@@ -259,12 +421,12 @@ char* _onepointer_ciphers_word_array_word( _word_array_t* word_array ) {
     return word;
 }
 
-void _onepointer_ciphers_word_array_writeto( _word_array_t* word_array, const unsigned short wordnum, const char* _Source ) {
+void _onepointer_word_array_writeto( _word_array_t* word_array, const unsigned short wordnum, const char* _Source ) {
     if ( wordnum >= word_array->words_size ) return;
     _onepointer_charbuf_cpy_n( word_array->words[wordnum], _Source, 0, 0, word_array->words[wordnum]->bufsize );
 }
 
-_word_table_t* _onepointer_ciphers_word_table_init( const unsigned short number_words, const unsigned short wordsize, const unsigned short number_word_lanes ) {
+_word_table_t* _onepointer_word_table_init( const unsigned short number_words, const unsigned short wordsize, const unsigned short number_word_lanes ) {
     _word_table_t* wt = (_word_table_t*) malloc(sizeof(_word_table_t));
 
     wt->word_lanes_size = 0;
@@ -272,16 +434,16 @@ _word_table_t* _onepointer_ciphers_word_table_init( const unsigned short number_
 
     wt->word_lanes = (_word_array_t*) malloc(sizeof(_word_array_t*)*number_word_lanes);
     for ( unsigned short nwl = 0; nwl < number_word_lanes; nwl++ ) {
-        wt->word_lanes[nwl] = _onepointer_ciphers_word_array_init( number_words, wordsize );
+        wt->word_lanes[nwl] = _onepointer_word_array_init( number_words, wordsize );
         ++wt->word_lanes_size;
     }
 
-    _onepointer_ciphers_word_table_switch2( wt, 0, 0 );
+    _onepointer_word_table_switch2( wt, 0, 0 );
 
     return wt;
 }
 
-bool _onepointer_ciphers_word_table_switch( _word_table_t* word_table, const unsigned short wordlanenum ) {
+bool _onepointer_word_table_switch( _word_table_t* word_table, const unsigned short wordlanenum ) {
     if ( wordlanenum >= word_table->word_lanes_size ) return false;
 
     word_table->word_lane = word_table->word_lanes[wordlanenum];
@@ -290,22 +452,22 @@ bool _onepointer_ciphers_word_table_switch( _word_table_t* word_table, const uns
     return true;
 }
 
-bool _onepointer_ciphers_word_table_switch2( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
-    if ( ! _onepointer_ciphers_word_table_switch( word_table, wordlanenum ) ) return false;
-    return _onepointer_ciphers_word_array_switch( word_table->word_lane, wordnum );
+bool _onepointer_word_table_switch2( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
+    if ( ! _onepointer_word_table_switch( word_table, wordlanenum ) ) return false;
+    return _onepointer_word_array_switch( word_table->word_lane, wordnum );
 }
 
-char* _onepointer_ciphers_word_table( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
+char* _onepointer_word_table( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum ) {
     if ( wordlanenum >= word_table->word_lanes_size || wordnum >= word_table->words_size ) return "";
     return word_table->word_lanes[wordlanenum]->words[wordnum]->buf;
 }
 
-char* _onepointer_ciphers_word_table_lane( _word_table_t* word_table, const unsigned short wordlanenum ) {
+char* _onepointer_word_table_lane( _word_table_t* word_table, const unsigned short wordlanenum ) {
     if ( wordlanenum >= word_table->word_lanes_size ) return "";
-    return _onepointer_ciphers_word_array_word( word_table->word_lanes[wordlanenum] );
+    return _onepointer_word_array_word( word_table->word_lanes[wordlanenum] );
 }
 
-char* _onepointer_ciphers_word_table_complete( _word_table_t* word_table ) {
+char* _onepointer_word_table_complete( _word_table_t* word_table ) {
     size_t bufsize_each = word_table->word_lanes[0]->words[0]->bufsize;
     size_t wordsize = word_table->word_lanes_size * word_table->words_size * bufsize_each;
 
@@ -313,7 +475,7 @@ char* _onepointer_ciphers_word_table_complete( _word_table_t* word_table ) {
 
     unsigned int cbi = 0;
     for ( unsigned int wtl = 0; wtl < word_table->word_lanes && cbi < wordsize; wtl++, cbi = cbi + bufsize_each ) {
-        char* word_lane = _onepointer_ciphers_word_table_lane( word_table, wtl );
+        char* word_lane = _onepointer_word_table_lane( word_table, wtl );
         _onepointer_charbuf_cpy_n( cb, word_lane, 0, cbi, bufsize_each );
         
     }
@@ -321,9 +483,9 @@ char* _onepointer_ciphers_word_table_complete( _word_table_t* word_table ) {
     return cb->buf;
 }
 
-void _onepointer_ciphers_word_table_writeto( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum, const char* _Source ) {
+void _onepointer_word_table_writeto( _word_table_t* word_table, const unsigned short wordlanenum, const unsigned short wordnum, const char* _Source ) {
     if ( wordlanenum >= word_table->word_lanes_size || wordnum >= word_table->word_lanes[wordlanenum]->words_size ) return;
-   _onepointer_ciphers_word_array_writeto( word_table->word_lanes[wordlanenum], wordnum, _Source );
+   _onepointer_word_array_writeto( word_table->word_lanes[wordlanenum], wordnum, _Source );
 }
 
 
