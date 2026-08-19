@@ -1,6 +1,6 @@
 
-#ifndef __WORDS_H_
-#define __WORDS_H_
+#ifndef __WINGBUFFER_H_
+#define __WINGBUFFER_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,8 +18,8 @@ typedef enum WINGBUF_ALGORITHM {
 };
 
 
-typedef struct _onepointer_ciphers_wingbuffer {
-    word_t** words;
+typedef struct _onepointer_wingbuffer {
+    word_t*** words;
     size_t wordlen;
     size_t num_words;
     bool symmetric;
@@ -31,4 +31,4 @@ typedef struct _onepointer_ciphers_wingbuffer {
 }
 #endif
 
-#endif // __WORDS_H_
+#endif // __WINGBUFFER_H_
