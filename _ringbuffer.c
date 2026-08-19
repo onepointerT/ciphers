@@ -34,14 +34,28 @@ void _onepointer_ringbuffer_copy_words_to_wordarray( const _word_ringbuf_t* wrb,
     while ( offset_still > 0 ) {
         word_t* word_now = NULL;
         _onepointer_ringbuffer_get_contiguous( wrb, word_now, startpos, offset_still );
-        _onepointer_ciphers_word_array_writeto( wa, offset_still, wrb->words[startpos+offset_still]->buf );
+        _onepointer_word_array_writeto( wa, offset_still, wrb->words[startpos+offset_still]->buf );
 
         offset_still = _onepointer_ringbuffer_wordindex_contiguous( wrb, offset_still, -1 );
     }
 }
 
-void _onepointer_ringbuffer_copy_words_from_wordarray( _word_ringbuf_t* wrb, const _word_array_t* wa, const size_t startpos_dest, const int _offset ) {
-    if ( wa == NULL || wrb == NULL ) return; else if ( sizeof(wa->words) / sizeof(word_t*) < _offset ) return;
+void _onepointer_ringbuffer_copy_words_from_wordarray( _word_ringbuf_t* wrb, const _word_array_t* wa, const size_t startpos_wa_Src
+                                            , const size_t startpos_dest, const size_t _N_words, const int _offset_ringbuf
+) {
+    if ( wa == NULL || wrb == NULL ) return;
+
+    for ( size_t wa_pos = startpos_wa_Src; wa_pos < sizeof(wa->words)/sizeof(word_t) && wa_pos < startpos_wa_Src + _N_words; wa_pos++ ) {
+        word_t* w = wa->words[wa_pos];
+        size_t wrb_idx = _onepointer_ringbuffer_wordindex_contiguous( wrb, startpos_dest, _offset_ringbuf );
+        size_t num_words = 0;
+        while ( num_words < _N_words ) {
+            _onepointer_charbuf_cpy( wrb->words[wrb_idx], w->buf, 0, 0 );
+            wrb_idx = _onepointer_ringbuffer_wordindex_contiguous( wrb, wrb_idx, 1 );
+
+            ++num_words;
+        }
+    }
 }
 
 void _onepointer_ringbuffer_insert_word( _word_ringbuf_t* wrb, word_t* word, const size_t into_wordof_ring
@@ -167,8 +181,8 @@ bool _onepointer_ringbuffer_swap_contiguous( _word_ringbuf_t* wrb, const size_t 
 }
 
 
-bool onepointer_ringbuffer_shift_words( _word_ringbuf_t* wrb, const size_t startpos, const int shift_width ) {
-    return _onepointer_ringbuffer_shift_by_one_contiguous(wrb, startpos, shift_width/2);
+bool onepointer_ringbuffer_shift_words( _word_ringbuf_t* wrb, const size_t startpos, const int shift_width, const bool shift_left_not_right ) {
+    return _onepointer_ringbuffer_shift_by_one_contiguous(wrb, startpos, shift_width/2, shift_left_not_right);
 }
 
 bool onepointer_ringbuffer_shift_neighbours( _word_ringbuf_t* wrb, const size_t startpos, const size_t neighbour_count, const int shift_width ) {
@@ -180,6 +194,9 @@ bool onepointer_ringbuffer_swap_neighbours( _word_ringbuf_t* wrb, const size_t s
 ) {
     if ( neighbour_count < 2 ) return false;
     const unsigned int neighbours_one_side = neighbour_count / 2;
+
+    if ( invert_on_each_side ) if ( ! onepointer_ringbuffer_swap_sides( wrb, startpos, neighbours_one_side, true ) ) return false;
+
     const size_t word_idx_left = _onepointer_ringbuffer_wordindex_contiguous( wrb, startpos, - neighbours_one_side );
     const size_t word_idx_right = _onepointer_ringbuffer_wordindex_contiguous( wrb, startpos, neighbours_one_side );
 
@@ -195,49 +212,123 @@ bool onepointer_ringbuffer_swap_neighbours( _word_ringbuf_t* wrb, const size_t s
         if ( symmetric ) onepointer_ringbuffer_swap_symetric( wrb, word_idx_middle, unswapped_neighbours - 1, invert_on_each_side );
         else onepointer_ringbuffer_swap_asymetric( wrb, word_idx_middle, unswapped_neighbours - 1, true );
 
+        if ( ! onepointer_ringbuffer_swap_neighbours( wrb, word_idx_middle
+                                , steps == 3 ? - unswapped_neighbours + 2 : unswapped_neighbours - 2
+                                , inverting, symmetric, invert_on_each_side
+                    ) ) return false;
+
         --steps;
     }
 
+    if ( steps > 2 ) return false;
     if ( inverting ) {
-
+        if ( onepointer_ringbuffer_swap_sides( wrb, startpos, neighbours_one_side, true ) ) {
+            if ( invert_on_each_side ) return onepointer_ringbuffer_swap_sides( wrb, startpos, neighbours_one_side, true );
+            return true;
+        } else return false;
     }
 
     return true;
 }
 
-bool onepointer_ringbuffer_swap_sides( _word_ringbuf_t* wrb, const size_t startpos, const size_t _offset_one_side, const bool inverting ) {
-    _word_array_t* site_one = _onepointer_ciphers_word_array_init( _offset_one_side, wrb->wordlen );
-    _word_array_t* site_two = _onepointer_ciphers_word_array_init( _offset_one_side, wrb->wordlen );
+_word_ringbuf_t* onepointer_ringbuffer_swap_sides( _word_ringbuf_t* wrb, const size_t startpos, const size_t _offset_one_side, const bool symetrically_inverting_sides ) {
+    _word_array_t* site_one = _onepointer_word_array_init( _offset_one_side, wrb->wordlen );
+    _word_array_t* site_two = _onepointer_word_array_init( _offset_one_side, wrb->wordlen );
+    word_t* w_start_tmp = wrb->words[_onepointer_ringbuffer_wordindex_contiguous(wrb, startpos, 0)];
+
+    // Copy words to wordbuffer
+    for ( size_t w = 1; w < _offset_one_side; w++ ) {
+        site_one->words[w-1] = wrb->words[_onepointer_ringbuffer_wordindex_contiguous(wrb, startpos, w)];
+        site_two->words[w-1] = wrb->words[_onepointer_ringbuffer_wordindex_contiguous(wrb, startpos, -w)];
+    }
+
+    _word_ringbuf_t* rb_result = wrb;
+    if ( wrb->ringsize < 2*_offset_one_side ) rb_result = _onepointer_ringbuffer_init( (2*wrb->ringsize)+1, wrb->wordlen );
+    rb_result->words[_offset_one_side-1] = w_start_tmp;
+
+    for ( size_t w = 0; w < _offset_one_side; w++ ) {
+        if ( symetrically_inverting_sides ) {
+            rb_result->words[_onepointer_ringbuffer_wordindex_contiguous(rb_result, 0, w)] = site_two->words[w];
+            rb_result->words[_onepointer_ringbuffer_wordindex_contiguous(rb_result, 0, -w)] = site_one->words[w];
+        } else {
+            rb_result->words[_onepointer_ringbuffer_wordindex_contiguous(rb_result, 0, w)] = site_two->words[w];
+            rb_result->words[_onepointer_ringbuffer_wordindex_contiguous(rb_result, 0, -w)] = site_one->words[_offset_one_side-1-w];
+        }
+    }
+
+    return rb_result;
 }
 
-bool onepointer_ringbuffer_swap_symetric( _word_ringbuf_t* wrb, const size_t startpos, const bool neighbour_count, const bool inverting ) {
-
+_word_ringbuf_t* onepointer_ringbuffer_swap_symetric( _word_ringbuf_t* wrb, const size_t startpos, const size_t _offset_one_side ) {
+    return onepointer_ringbuffer_swap_sides( wrb, startpos, _offset_one_side, true );
 }
 
-bool onepointer_ringbuffer_swap_asymetric( _word_ringbuf_t* wrb, const size_t startpos, const bool neighbour_count, const bool starting_outside ) {
-
+_word_ringbuf_t* onepointer_ringbuffer_swap_asymetric( _word_ringbuf_t* wrb, const size_t startpos, const size_t _offset_one_side ) {
+    return onepointer_ringbuffer_swap_sides( wrb, startpos, _offset_one_side, false );
 }
 
-bool onepointer_ringbuffer_swap_symetric( _word_ringbuf_t* wrb, const size_t startpos, const bool neighbour_count, const size_t shift_width
-                                        , const bool starting_outside
-) {
+bool onepointer_ringbuffer_rotate_symetrically( _word_ringbuf_t* wrb, const size_t startpos ) {
+    size_t wrb_idx = _onepointer_ringbuffer_wordindex_contiguous( wrb, startpos, 0 );
+    size_t words_shifted = 0;
+    while ( words_shifted != wrb->ringsize ) {
+        _onepointer_ringbuffer_shift_by_one_contiguous( wrb, wrb_idx, wrb->ringsize, false );
 
+        wrb_idx = _onepointer_ringbuffer_wordindex_contiguous( wrb, wrb_idx, 1 );
+        ++words_shifted;
+    }
+    return true;
 }
 
-bool onepointer_ringbuffer_rotate_symetrically( _word_ringbuf_t* wrb, const size_t startpos, const bool neighbour_count ) {
-
+bool onepointer_ringbuffer_rotate_asymetrically( _word_ringbuf_t* wrb, const size_t startpos, const bool starting_outside ) {
+    return _onepointer_ringbuffer_shift_at_ring_contiguous( wrb, startpos, wrb->ringsize / 2, wrb->ringsize, true );
 }
 
-bool onepointer_ringbuffer_rotate_symetrically( _word_ringbuf_t* wrb, const size_t startpos, const bool neighbour_count, const bool starting_outside ) {
 
-}
-
-bool onepointer_ringbuffer_shift_once( _word_ringbuf_t* wrb, const size_t startpos, const bool symetrical
+bool onepointer_ringbuffer_shift_once( _word_ringbuf_t* wrb, const size_t startpos
                                         , const enum RINGBUFFER_SHIFTING_ALGORITHMUS algo
 ) {
+    switch (algo)
+    {
+    case SHIFT_WORDS:
+        return onepointer_ringbuffer_shift_words( wrb, startpos, (size_t) fabsl(wrb->ringsize / 2), true );
 
+    case SHIFT_NEIGHBOURS:
+        return onepointer_ringbuffer_shift_neighbours( wrb, startpos, (size_t) fabsl(wrb->ringsize / 3)
+                                                                    , (size_t) fabsl(wrb->ringsize / 5)
+                        );
+
+    case SWAP_NEIGHBOURS:
+        return onepointer_ringbuffer_swap_neighbours( wrb, startpos, (size_t) (wrb->ringsize / 4), true, true, false );
+
+    case SWAP_SYMETRIC:
+        return onepointer_ringbuffer_swap_symetric( wrb, startpos, (size_t) fabsl((wrb->ringsize-1)/2) );
+
+    case SWAP_ASYMETRIC:
+        return onepointer_ringbuffer_swap_asymetric( wrb, startpos, (size_t) fabsl((wrb->ringsize-1)/2) );
+
+    case SWAP_ASYMETRIC_AND_SHIFT:
+        return onepointer_ringbuffer_swap_asymetric( wrb, startpos, (size_t) fabsl((wrb->ringsize-1)/2) )
+            && _onepointer_ringbuffer_shift_by_one_contiguous( wrb, startpos, (size_t) fabsl((wrb->ringsize-1)/4), true );
+
+    case ROTATE_SYMETRICALLY:
+        return onepointer_ringbuffer_rotate_symetrically( wrb, startpos )
+            && onepointer_ringbuffer_rotate_symetrically( wrb, startpos )
+            && onepointer_ringbuffer_rotate_symetrically( wrb, startpos );
+
+    case ROTATE_ASYMETRICALLY:
+        return onepointer_ringbuffer_rotate_asymetrically( wrb, startpos, false )
+            && onepointer_ringbuffer_rotate_asymetrically( wrb, startpos, false );
+
+    default:
+        break;
+    }
 }
 
-bool onepointer_ringbuffer_shift( _word_ringbuf_t* wrb, const size_t startpos, const enum RINGBUFFER_SHIFTING_ALGORITHMUS* algorithms ) {
 
+bool onepointer_ringbuffer_shift( _word_ringbuf_t* wrb, const size_t startpos, const enum RINGBUFFER_SHIFTING_ALGORITHMUS* algorithms ) {
+    for ( size_t a = 0; a < sizeof(algorithms)/sizeof(enum RINGBUFFER_SHIFTING_ALGORITHMUS); a++ ) {
+        const enum RINGBUFFER_SHIFTING_ALGORITHMUS rbsa = algorithms[a];
+        if ( ! onepointer_ringbuffer_shift_once( wrb, startpos, rbsa ) ) return false;
+    }
+    return true;
 }
