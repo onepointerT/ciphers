@@ -29,15 +29,15 @@ typedef struct _onepointer_pyramidring {
     size_t h_idx;
     bool leftof_nor_rightof;
     bool topof_nor_lowerof;
-    _onepointer_pyramidword* put_where_if;
-    _onepointer_pyramidword* put_original_where_if;
+    struct _onepointer_pyramidword* put_where_if;
+    struct _onepointer_pyramidword* put_original_where_if;
 } _pyramidring_t;
 
 
 typedef struct _onepointer_pyramidword {
     word_t* word;
     _pyramidring_t* ring;
-    _onepointer_pyramidreference** ref_out;
+    struct _onepointer_pyramidreference** ref_out;
 } _pyramidword_t;
 
 
@@ -58,6 +58,12 @@ typedef struct _onepointer_pyramidbuffers {
     bool symmetric;
     bool inheriting;
     bool shifted;
+
+    // Buffers
+    word_t** wordbuf;
+    size_t wordbuf_size;
+    _word_ringbuf_t** ringbuf;
+    size_t ringbuf_size;
 
     // Cipher streaming, reference wavers and similar
     _pyramidreference_t** inheritors;
