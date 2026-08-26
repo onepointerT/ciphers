@@ -20,9 +20,30 @@ typedef enum WINGBUF_ALGORITHM {
 };
 
 
-typedef struct _onepointer_wingbuffer {
-    _word_pyramidbuf_t** wings;
+typedef struct _onepointer_wingside {
+    _word_pyramidbuf_t* wing;
     _word_ringbuf_t** rings;
+    size_t wordlen;
+    size_t num_rings;
+} _word_wingside_t;
+
+typedef struct _onepointer_wing {
+    _word_wingside_t* side[2];
+
+     // Cipher information
+    _pyramidring_t*** outter_rings;
+    size_t num_outter_rings;
+
+    // Buffers
+    _word_ringbuf_t** ringbuf;
+    size_t ringbuf_size;
+    word_t** wordbuf;
+    size_t wordbuf_size;
+} _word_wing_t;
+
+typedef struct _onepointer_wingbuffer {
+    _word_wing_t* wings[2];
+    _word_ringbuf_t** rings[3];
     size_t wordlen;
     size_t num_wings;
     size_t num_rings;
@@ -45,6 +66,16 @@ typedef struct _onepointer_wingbuffer {
 
     enum WINGBUF_ALGORITHM shifting_algo;
 } _word_wingbuf_t;
+
+
+typedef struct _onepointer_wingpage {
+    _word_wing_t* page[2];
+} _word_wingpage_t;
+
+typedef struct _onepointer_wingbook {
+    _word_wingpage_t** pages;
+    size_t num_pages;
+} _word_wingbook_t;
 
 #ifdef __cplusplus
 }
