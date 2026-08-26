@@ -21,7 +21,8 @@ typedef enum RINGBUFFER_SHIFTING_ALGORITHMUS {
     SWAP_ASYMETRIC,
     SWAP_ASYMETRIC_AND_SHIFT,
     ROTATE_SYMETRICALLY,
-    ROTATE_ASYMETRICALLY
+    ROTATE_ASYMETRICALLY,
+    NONE
 } _ringbuffer_shiftalgo_t;
 
 _ringbuffer_shiftalgo_t* _onepointer_ringbuffer_shiftalgorithms_array_init( const size_t algorithm_count );

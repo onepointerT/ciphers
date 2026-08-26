@@ -24,7 +24,7 @@ hash_t* _onepointer_hash_init_parts( const unsigned int lenght_of_hash_bits, voi
 }
 
 
-_charbuf_t* _onpointer_charbuf_init( const unsigned short bufsize ) {
+_charbuf_t* _onpointer_charbuf_init( const size_t bufsize ) {
 
     struct _onepointer_charbuf* cbuf = (struct _onepointer_charbuf*) malloc(sizeof(struct _onepointer_charbuf));
 
@@ -35,7 +35,7 @@ _charbuf_t* _onpointer_charbuf_init( const unsigned short bufsize ) {
 }
 
 
-_blockbuf_t* _onepointer_blockbuf_init( const unsigned int buffercount, const unsigned short buffersize_each ) {
+_blockbuf_t* _onepointer_blockbuf_init( const unsigned int buffercount, const size_t buffersize_each ) {
 
     struct _onepointer_blockbuf* blkbuf = (struct _onepointer_blockbuf*) malloc(sizeof(struct _onepointer_blockbuf));
 

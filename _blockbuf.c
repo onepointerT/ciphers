@@ -92,3 +92,49 @@ char* _word( _blockbuf_t* _blockbuf, const unsigned int index ) {
     if ( _blockbuf->buffercount <= index ) return "";
     return _blockbuf->buffers[index]->buf;
 }
+
+_quadbuf_t* _onepointer_quadbuf_init( const size_t _N_rows, const size_t _N_cols, const size_t wordlength ) {
+    _quadbuf_t* qb = (_quadbuf_t*) malloc(sizeof(_quadbuf_t));
+
+    qb->buffersize = wordlength;
+    qb->num_columns = _N_cols;
+    qb->num_rows = _N_rows;
+    qb->rows = (_blockbuf_t**) malloc(sizeof(_blockbuf_t*)*qb->num_rows);
+    for ( size_t bbr = 0; bbr < qb->num_rows; bbr++ ) {
+        qb->rows[bbr] = _onepointer_blockbuf_init( _N_cols, wordlength );
+    }
+
+    return qb;
+}
+
+_blockbuf_t* _row( _quadbuf_t* _quadbuf, const size_t row_index ) {
+    if ( _quadbuf == NULL ) return NULL;
+    else if ( _quadbuf->num_rows >= row_index ) return NULL;
+
+    return _quadbuf->rows[row_index];
+}
+
+_charbuf_t** _col( _quadbuf_t* _quadbuf, const size_t col_index ) {
+    if ( _quadbuf == NULL ) return NULL;
+    else if ( _quadbuf->num_columns >= col_index ) return NULL;
+
+    _charbuf_t** _cb = (_charbuf_t**) malloc(sizeof(_charbuf_t*)*_quadbuf->num_rows);
+    for ( size_t r = 0; r < _quadbuf->num_rows; r++ ) {
+        if ( _quadbuf->rows[r] == NULL ) continue;
+        else if ( _quadbuf->rows[r]->buffers == NULL ) continue;
+
+        _cb[r] = _quadbuf->rows[r]->buffers[col_index];
+    }
+
+    return _cb;
+}
+
+_charbuf_t* _wpos( _quadbuf_t* _quadbuf, const size_t row_index, const size_t col_index ) {
+    if ( _quadbuf == NULL ) return NULL;
+    else if ( _quadbuf->num_rows >= row_index ||_quadbuf->num_columns >= col_index ) return NULL;
+
+    if ( _quadbuf->rows[row_index] != NULL )
+        if ( _quadbuf->rows[row_index]->buffers != NULL )
+            return _quadbuf->rows[row_index]->buffers[col_index];
+    return NULL;
+}
