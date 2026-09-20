@@ -11,6 +11,20 @@
 
 
 
+
+aes_t* _onepointer_ciphers_init_aes( const unsigned short wordlength, const unsigned short word_columns ) {
+    aes_t* aes = (aes_t*) malloc(sizeof(aes_t));
+
+    aes->keystrength = wordlength * word_columns * word_columns;
+    aes->msgstrength = wordlength * word_columns * word_columns;
+    aes->key = "";
+    aes->msg = "";
+    aes->cipher = 0;
+
+    return aes;
+}
+
+
 char* __aes_sbox_rijndael( const char* x ) {
     double minv_X = __multiplicative_inverse(*((double*) x), 2, 8);
     const char* minv_char_X = (char*) &minv_X;

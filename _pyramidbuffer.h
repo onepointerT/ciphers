@@ -92,6 +92,10 @@ typedef enum PYRAMID_SHAPE {
     PYRAMID_MINUS_1_PER_ROW_GAPS_ON_TOP,
     PYRAMID_WITH_GAPS,
     PYRAMID_WITH_STRAIGHT_ROOF,
+    PYRAMID_WITH_CINS_BELOW,
+    PYRAMID_WINGLY,
+    PYRAMID_WINGLY_LEFT,
+    PYRAMID_WINGLY_RIGHT,
     ASCII_ONLY
 } _onepointer_pyramid_shape;
 
@@ -147,6 +151,11 @@ _word_pyramidbuf_t* _onepointer_pyramidbuffer_init( const enum PYRAMID_SHAPE pys
                                         , const size_t words_in_ring
                                         , const ascii_t shape_or_symetric_with_NULL
 
+);
+void _onepointer_init_pyramidwords_or_paint( _pyramidword_t*** words, const enum PYRAMID_SHAPE pys
+                                      , const size_t height_rows, const size_t words_floor_row
+                                      , const bool init_wordbuffer, const size_t wordlength
+                                      , const ascii_t shape_or_symetric_with_NULL
 );
 
 _pyramidword_t** _onepointer_pyramidbuffer_row( _word_pyramidbuf_t* wpyb, const size_t h_idx );

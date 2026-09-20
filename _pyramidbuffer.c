@@ -5,21 +5,6 @@
 #include <stdlib.h>
 
 
-_pyramidring_t* _onepointer_pyramidring_init( const size_t words, const size_t wordlength
-                                            , const size_t vertical_index, const size_t horizontal_index
-) {
-    _pyramidring_t* pyr = (_pyramidring_t*) malloc(sizeof(_pyramidring_t));
-
-    pyr->ringbuf = _onepointer_ringbuffer_init( words, wordlength );
-    pyr->v_idx = vertical_index;
-    pyr->h_idx = horizontal_index;
-    pyr->leftof_nor_rightof = true;
-    pyr->topof_nor_lowerof = false;
-    pyr->put_where_if = NULL;
-    pyr->put_original_where_if = NULL;
-
-    return pyr;
-}
 
 bool _onepointer_pyramidring_put( const _pyramidring_t* pyr ) {
     if ( pyr->put_where_if == NULL ) return false;
@@ -31,23 +16,6 @@ bool _onepointer_pyramidring_put_original( const _pyramidring_t* pyr ) {
     if ( pyr->put_where_if == NULL ) return false;
     pyr->put_original_where_if->ring = pyr->ringbuf;
     return true;
-}
-
-_pyramidword_t* _onepointer_pyramidword_init( const size_t wordlength, const size_t words_in_ring
-                                            , const size_t wordlength_in_ring, const size_t size_referencer_array
-) {
-    _pyramidword_t* pyw = (_pyramidword_t*) malloc(sizeof(_pyramidword_t));
-
-    pyw->word = _onpointer_charbuf_init( wordlength );
-    if ( wordlength_in_ring == 0 || words_in_ring == 0 ) pyw->ring = NULL;
-    else pyw->ring = _onepointer_pyramidring_init( words_in_ring, wordlength_in_ring, 0, 0 );
-    if ( size_referencer_array == 0 ) pyw->ref_out = NULL;
-    else {
-        pyw->ref_out = (struct _onepointer_pyramidreference**) malloc(sizeof(struct _onepointer_pyramidreference*)*size_referencer_array);
-        for ( size_t r = 0; r < size_referencer_array; r++ ) { pyw->ref_out[r] = NULL; }
-    }
-
-    return pyw;
 }
 
 void _onepointer_pyramidword_resize_array( _pyramidword_t** ref_arr, const int additional_size ) {
@@ -205,22 +173,6 @@ size_t _onepointer_pyramidword_referencerarray_resize( _pyramidword_t* pyw, cons
     }
 }
 
-_pyramidreference_t* _onepointer_pyramidreference_init( const size_t wordlength, const enum PYRAMID_REFERENCE_TYPE ref_type ) {
-    _pyramidreference_t* pyrf = (_pyramidreference_t*) malloc(sizeof(_pyramidreference_t));
-
-    if ( wordlength == 0 ) {
-        pyrf->origin = NULL;
-        pyrf->dest = NULL;
-    } else {
-        pyrf->origin = _onepointer_pyramidword_init( wordlength, 0, 0, 0 );
-        pyrf->dest = (_pyramidreference_t**) malloc(sizeof(_pyramidreference_t*));
-    }
-    pyrf->pass = NULL;
-    pyrf->type = ref_type;
-
-    return pyrf;
-}
-
 void _onepointer_pyramidreference_resize_array( _pyramidreference_t** ref_arr, const int additional_size ) {
     size_t size_ref_arr = sizeof(ref_arr) / sizeof(_pyramidreference_t*);
     
@@ -264,41 +216,22 @@ void _onepointer_pyramidroute_addroute_ref( _pyramidreference_t*** ref_arr, _pyr
 }
 
 
-_word_pyramidbuf_t* _onepointer_pyramidbuffer_init( const enum PYRAMID_SHAPE pys, const size_t wordlength
-                                        , const size_t height_rows, const size_t words_floor_row
-                                        , const size_t words_in_ring
-                                        , const ascii_t shape_or_symetric_with_NULL
-
+void _onepointer_init_pyramidwords_or_paint( _pyramidword_t*** words, const enum PYRAMID_SHAPE pys
+                                      , const size_t height_rows, const size_t words_floor_row
+                                      , const bool init_wordbuffer, const size_t wordlength
+                                      , const ascii_t shape_or_symetric_with_NULL
 ) {
-    _word_pyramidbuf_t* pyb = (_word_pyramidbuf_t*) malloc(sizeof(_word_pyramidbuf_t));
-
-    bool from_ascii = shape_or_symetric_with_NULL != NULL;
-    pyb->words = from_ascii ? NULL : _onepointer_pyramidword_init( wordlength, words_in_ring, wordlength, 0 );
-    pyb->wordlength = wordlength;
-    pyb->num_words_floor = words_floor_row;
-    pyb->num_words_uppside = pys == PYRAMID_WITH_STRAIGHT_ROOF ? 0 : 1;
-    pyb->num_rows = height_rows;
-    pyb->gap_size_uppside = pys == PYRAMID_WITH_STRAIGHT_ROOF
-                        || pys != PYRAMID_WITH_GAPS ? 0 : 1;
-    pyb->if_ascii = shape_or_symetric_with_NULL;
-    pyb->symetric = pyb->if_ascii == NULL;
-    pyb->inheriting = false;
-    pyb->shifted = false;
-    pyb->pshape = pys;
-    pyb->wordbuf = (word_t**) malloc(sizeof(word_t*)*ONEPOINTER_PYRAMIDBUFFER_SIZE_TMPBUFFERS);
-    pyb->wordbuf_size = ONEPOINTER_PYRAMIDBUFFER_SIZE_TMPBUFFERS;
-    pyb->ringbuf = (_word_ringbuf_t**) malloc(sizeof(_word_ringbuf_t*)*ONEPOINTER_PYRAMIDBUFFER_SIZE_TMPBUFFERS);
-    pyb->ringbuf_size = ONEPOINTER_PYRAMIDBUFFER_SIZE_TMPBUFFERS;
-    pyb->inheritors = NULL;
-    pyb->cipher_streams = NULL;
-    pyb->reference_wavers = NULL;
-    pyb->graph_start = NULL;
-    pyb->route = NULL;
-    pyb->shifting_algo = NONE;
-    pyb->ring_algo = NONE;
-
-    return pyb;
+    _pyramidword_t*** pyw = (_pyramidword_t***) malloc(sizeof(_pyramidword_t**)*height_rows);
+    for ( size_t r = 0; r < height_rows; r++ ) {
+        pyw[r] = (_pyramidword_t**) malloc(sizeof(_pyramidword_t*)*words_floor_row);
+        for ( size_t w = 0; w < words_floor_row; w++ ) {
+            if ( ! init_wordbuffer ) pyw[r][w] = NULL;
+            else pyw[r][w] = _onepointer_pyramidword_init( wordlength, 0, wordlength, 0 );
+        }
+    }
+    //_onepointer_init_
 }
+
 
 _pyramidword_t** _onepointer_pyramidbuffer_row( _word_pyramidbuf_t* wpyb, const size_t h_idx ) {
     if ( h_idx >= wpyb->num_rows ) return NULL;

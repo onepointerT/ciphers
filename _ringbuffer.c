@@ -6,22 +6,6 @@
 #include <stdlib.h>
 
 
-_ringbuffer_shiftalgo_t* _onepointer_ringbuffer_shiftalgorithms_array_init( const size_t algorithm_count ) {
-    return (_ringbuffer_shiftalgo_t*) malloc(sizeof(_ringbuffer_shiftalgo_t));
-}
-
-_word_ringbuf_t* _onepointer_ringbuffer_init( const size_t ringsize, const size_t wordlen ) {
-    _word_ringbuf_t* wrb = (_word_ringbuf_t*) malloc(sizeof(_word_ringbuf_t));
-    
-    wrb->words = (word_t**) malloc( sizeof(_onpointer_charbuf_init(wordlen))*(ringsize/wordlen) );
-    wrb->ringsize = ringsize;
-    wrb->wordlen = wordlen;
-    wrb->shifted = false;
-    wrb->shift_count = 0;
-
-    return wrb;
-}
-
 void _onepointer_ringbuffer_copy_word( _word_ringbuf_t* wrb, word_t* word, const size_t into_wordof_ring ) {
     if ( into_wordof_ring >= fmodl(wrb->ringsize, wrb->wordlen) ) return;
     wrb->words[into_wordof_ring] = _onepointer_merge_word( wrb->words[into_wordof_ring], word, NULL );
