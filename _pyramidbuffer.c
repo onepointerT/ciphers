@@ -296,6 +296,8 @@ bool onepointer_pyramidreference_reference_wave( struct _onepointer_pyramidbuffe
             }
         }
     }
+
+    return true;
 }
 
 
