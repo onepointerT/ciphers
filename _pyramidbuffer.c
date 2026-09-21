@@ -1,9 +1,12 @@
 
 #include "_pyramidbuffer.h"
 
+#include "_str.h"
+
 #include <stddef.h>
 #include <stdlib.h>
 
+#include <libm.h>
 
 
 bool _onepointer_pyramidring_put( const _pyramidring_t* pyr ) {
@@ -161,6 +164,141 @@ bool _onepointer_pyramidreference_type_has( const _pyramidreference_t* pref, con
 }
 
 
+_pyramidreference_t** _onepointer_pyramidreference_find_type( const _pyramidreference_t** pref_arr, const enum PYRAMID_REFERENCE_TYPE prt ) {
+    size_t pref_arr_size = sizeof(pref_arr)/sizeof(const _pyramidreference_t*);
+    _pyramidreference_t** pref = (_pyramidreference_t**) malloc(((size_t) fabsl(pref_arr_size/3))
+                                                                * sizeof(_pyramidreference_t*)
+    );
+    
+    size_t pref_idx = 0;
+    for ( size_t pr = 0; pr < pref_arr_size; pr++ ) {
+        if ( _onepointer_pyramidreference_type_has( pref_arr[pr], prt ) ) {
+            pref[pref_idx] = pref_arr[pr];
+            ++pref_idx;
+        }
+    }
+
+    return pref;
+}
+
+
+bool onepointer_pyramidreference_inheritor( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                          , const cb_word_update_f word_update_f
+) {
+    if ( word_update_f == NULL ) return false;
+    
+    _pyramidreference_t** pref_inheritor = _onepointer_pyramidreference_find_type( from->ref_in, INHERITOR );
+    size_t num_inheritors = sizeof(pref_inheritor) / sizeof(_pyramidreference_t*);
+
+    for ( size_t i = 0; i < num_inheritors; i++ ) {
+        _pyramidreference_t* pref = pref_inheritor[i];
+        
+        if ( ! word_update_f( pref->origin, from ) ) return false;
+        else if ( ! onepointer_pyramidreference_inheritor( wpyb, pref->origin, word_update_f ) ) return false;
+    }
+
+    return true;
+}
+
+bool onepointer_pyramidreference_cipher_stream( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                              , const _pyramidword_t* until, const cb_word_update_f word_update_f
+) {
+    if ( word_update_f == NULL ) return false;
+
+    _pyramid_route_array_t proute_arr = _onepointer_pyramidbuffer_get_routes_to( wpyb, until, from, CIPHER_STREAMING );
+    size_t proute_arr_size = sizeof(proute_arr) / sizeof(_pyramid_route_t);
+    for ( size_t prs = 0; prs < proute_arr_size; prs++ ) {
+        _pyramid_route_t proute = proute_arr[prs];
+        size_t proute_size = sizeof(proute) / sizeof(_pyramidreference_t*);
+
+        for ( size_t pr = 0; pr < proute_size; pr++ ) {
+            _pyramidreference_t* pref = proute[pr];
+            size_t num_pref_destinations = sizeof(pref->dest) / sizeof(_pyramidword_t*);
+            for ( size_t d = 0; d < num_pref_destinations; d++ ) {
+                if ( ! word_update_f( pref->origin, pref->dest[d] ) ) return false;
+                else if ( ! onepointer_pyramidreference_inheritor( wpyb, pref->dest[d], inheritor_update_f) ) return false;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool onepointer_pyramidreference_reference_collector( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                                    , const _pyramidword_t* until, _pyramidword_t* updated_word
+                                                    , const cb_word_update_f word_update_f
+) {
+    if ( word_update_f == NULL ) return false;
+
+    _pyramid_route_array_t proute_arr = _onepointer_pyramidreference_get_routes_from( wpyb, until, from, REFERENCE_WAVER );
+    size_t proute_arr_size = sizeof(proute_arr) / sizeof(_pyramid_route_t);
+    size_t wc_idx = 0;
+    size_t wc_factorial = 0;
+    char* word_collector = NULL;
+    for ( size_t prs = 0; prs < proute_arr_size; prs++ ) {
+        _pyramid_route_t proute = proute_arr[prs];
+        size_t proute_size = sizeof(proute) / sizeof(_pyramidreference_t*);
+
+        for ( size_t pr = 0; pr < proute_size; pr++ ) {
+            _pyramidreference_t* pref = proute[pr];
+            size_t num_pref_destinations = sizeof(pref->dest) / sizeof(_pyramidword_t*);
+
+            for ( size_t d = 0; d < num_pref_destinations; d++ ) {
+
+                char* tmp_word_collector = NULL;
+                if ( word_collector == NULL || wc_idx >= ONEPOINTER_PYRAMIDREFERENCE_WAVE_MAX_WORDLENGTH*wc_factorial ) {
+                    ++wc_factorial;
+                    tmp_word_collector = word_collector;
+                    word_collector = (char*) malloc(sizeof(char)*wc_factorial);
+                    if ( tmp_word_collector != NULL ) { 
+                        for ( size_t wc = 0
+                            ; wc <  wc_factorial*ONEPOINTER_PYRAMIDREFERENCE_WAVE_MAX_WORDLENGTH
+                            ; ++wc
+                        ) {
+                            word_collector[wc] = tmp_word_collector[wc];
+                        }
+                    }
+                }
+
+                _pyramidword_t* pword = pref->dest[d];
+                size_t pword_length = sizeof(pword->word->buf) / sizeof(char);
+                strcpy_s_idx( word_collector, wc_idx, pword_length, pword->word->buf, 0 );
+                wc_idx += pword_length;
+            }
+        }
+    }
+
+    return word_update_f( updated_word, word_collector );
+}
+
+
+bool onepointer_pyramidreference_reference_wave( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                               , const _pyramidword_t* until, _pyramidword_t* updated_word
+                                               , const cb_word_update_f word_update_f
+) {
+    if ( word_update_f == NULL ) return false;
+
+    _pyramid_route_array_t proute_arr = _onepointer_pyramidreference_get_routes_from( wpyb, until, from, REFERENCE_WAVER );
+    size_t proute_arr_size = sizeof(proute_arr) / sizeof(_pyramid_route_t);
+    for ( size_t prs = 0; prs < proute_arr_size; prs++ ) {
+        _pyramid_route_t proute = proute_arr[prs];
+        size_t proute_size = sizeof(proute) / sizeof(_pyramidreference_t*);
+
+        for ( size_t pr = 0; pr < proute_size; pr++ ) {
+            _pyramidreference_t* pref = proute[pr];
+            size_t pref_dest_size = sizeof(pref->dest) / sizeof(_pyramidword_t*);
+
+            for ( size_t d = 0; d < pref_dest_size; d++ ) {
+                _pyramidword_t* pword = pref->dest[d];
+                if ( ! word_update_f( pword, pref->origin ) ) return false;
+                else if ( ! onepointer_pyramidreference_inheritor(wpyb, pword, inheritor_update_f) ) return false;
+                //else if ( ! onepointer_pyramidreference_cipher_stream(wpyb, pword, pword, cipher_streaming_update_f) ) return false;
+            }
+        }
+    }
+}
+
+
 
 size_t _onepointer_pyramidword_referencerarray_resize( _pyramidword_t* pyw, const size_t new_size_ref_out ) {
     _pyramidreference_t** ref_tmp = pyw->ref_out;
@@ -276,7 +414,7 @@ bool _onepointer_pyramidbuffer_reference_from_to( _word_pyramidbuf_t* wpyb, _pyr
     return true;
 }
 
-const _pyramidreference_t** _onepointer_pyramidreference_find_incoming_pword( const _pyramidword_t* pword, const _word_pyramidbuf_t* wpyb
+const _pyramid_route_array_t _onepointer_pyramidreference_find_incoming_pword( const _pyramidword_t* pword, const _word_pyramidbuf_t* wpyb
                                                                     , const enum PYRAMID_REFERENCE_TYPE prt
 ) {
     if ( pword->ref_in == NULL ) return NULL;

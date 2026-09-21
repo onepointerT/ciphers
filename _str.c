@@ -5,6 +5,32 @@
 #include <string.h>
 
 
+bool strncpy_s_idx( const char* _Source, const size_t _Start, const size_t _N
+                  , char* _Dest, const size_t _Start_Destination_Index
+) {
+    size_t strlen = sizeof(_Source) / sizeof(const char*);
+    if ( _Start >= strlen ) return false;
+
+    // Get the substr
+    char* substr = (char*) malloc(sizeof(char)*_N);
+    size_t cpy_idx = 0;
+    for ( size_t substr_idx = _Start; substr_idx < strlen && substr_idx <= _Start + _N; substr_idx++, cpy_idx++ ) {
+        substr[cpy_idx] = _Source[substr_idx];
+    }
+
+    // Insert the substr
+    if ( _Dest == NULL ) _Dest = (char*) malloc(sizeof(char)*_N);
+    size_t strlen_destination = sizeof(_Dest) / sizeof(char);
+    if ( _Start_Destination_Index >= strlen_destination ) return false;
+    size_t dest_idx = _Start_Destination_Index;
+    for ( size_t substr_idx = 0; substr_idx < _N && substr_idx < strlen_destination; substr_idx++ ) {
+        _Dest[dest_idx+substr_idx] = substr[substr_idx];
+    }
+
+    return true;
+}
+
+
 size_t strfind( const char* _Str, const char _chr ) {
     size_t count_found = 0;
 

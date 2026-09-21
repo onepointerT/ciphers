@@ -6,7 +6,12 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <stddef.h>
+
+bool strncpy_s_idx( const char* _Source, const size_t _Start, const size_t _N
+                  , char* _Dest, const size_t _Start_Destination_Index
+);
 
 size_t strfind( const char* _Str, const char _chr );
 size_t strnfind_s( const char* _Str, const size_t _N, const char* searchstr );

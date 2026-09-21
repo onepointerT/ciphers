@@ -21,6 +21,7 @@ typedef enum PYRAMIDBUF_ALGORITHM {
 // Forward-declaration
 struct _onepointer_pyramidreference;
 struct _onepointer_pyramidword;
+struct _onepointer_pyramidbuffer;
 
 
 typedef struct _onepointer_pyramidring {
@@ -47,6 +48,8 @@ typedef struct _onepointer_pyramidword {
     struct _onepointer_pyramidreference** ref_in;
 } _pyramidword_t;
 
+typedef bool (*cb_word_update_f)( _pyramidword_t* _destination, const _pyramidword_t* _origin );
+
 _pyramidword_t* _onepointer_pyramidword_init( const size_t wordlength, const size_t words_in_ring
                                             , const size_t wordlength_in_ring, const size_t size_referencer_array
 );
@@ -54,12 +57,15 @@ void _onepointer_pyramidword_resize_array( _pyramidword_t** ref_arr, const int a
 void _onepointer_pyramidword_addword( _pyramidword_t** ref_arr, _pyramidword_t* pyr );
 
 
-
+static cb_word_update_f inheritor_update_f = NULL;
+static cb_word_update_f cipher_streaming_update_f = NULL;
+static cb_word_update_f reference_waver_update_f = NULL;
 
 typedef enum PYRAMID_REFERENCE_TYPE {
     CIPHER_STREAMING,
     REFERENCE_WAVER,
     INHERITOR,
+    REFERENCE_COLLECTOR,
     MIXED,
     MIXED_NO_INHERITOR,
     MIXED_NO_CIPHER_STREAMS,
@@ -74,6 +80,48 @@ typedef struct _onepointer_pyramidreference {
     _word_ringbuf_t* pass;
     enum PYRAMID_REFERENCE_TYPE type;
 } _pyramidreference_t;
+
+_pyramidreference_t** _onepointer_pyramidreference_find_type( const _pyramidreference_t** pref_arr, const enum PYRAMID_REFERENCE_TYPE prt );
+
+/**
+ * @brief Once a word is changed, you can call this function to update all inheriting wordbuffers.
+ */
+bool onepointer_pyramidreference_inheritor( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                          , const cb_word_update_f word_update_f
+);
+/**
+ * @brief With cipher streaming all words along the pyramidreference lane pointers
+ *      will be updated with the cipher function `word_update_f` until the last word
+ *      contains the conclusional result. Inheritor updates are fulfilled within this functionality,
+ *      reference wave is called with the same parameters, to check the update and re-calculate the
+ *      reference-hash wordbuf..
+ */
+bool onepointer_pyramidreference_cipher_stream( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                              , const _pyramidword_t* until, const cb_word_update_f word_update_f
+);
+
+
+#define ONEPOINTER_PYRAMIDREFERENCE_WAVE_MAX_WORDLENGTH 556
+
+/**
+ * @brief Start with a word and wave and compare it along all references of the type `REFERENCE_WAVE`. This functions
+ *      collects all buffered words along the reference lanes from `from` to `until` and calls
+ *      `word_update_f( updated_word, collected_word )`.
+ *      
+ */
+bool onepointer_pyramidreference_reference_collector( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                                    , const _pyramidword_t* until, _pyramidword_t* updated_word
+                                                    , const cb_word_update_f word_update_f
+);
+/**
+ * @brief Start with a word and wave and compare it along all references of the type `REFERENCE_WAVE`. Calls the word
+ *      update function once per destination from the reference.
+ *      
+ */
+bool onepointer_pyramidreference_reference_wave( struct _onepointer_pyramidbuffer* wpyb, const _pyramidword_t* from
+                                               , const _pyramidword_t* until, _pyramidword_t* updated_word
+                                               , const cb_word_update_f word_update_f
+);
 
 _pyramidreference_t* _onepointer_pyramidreference_init( const size_t wordlength, const enum PYRAMID_REFERENCE_TYPE ref_type );
 void _onepointer_pyramidreference_resize_array( _pyramidreference_t** ref_arr, const size_t additional_size );
@@ -145,6 +193,8 @@ typedef struct _onepointer_pyramidbuffer {
     enum PYRAMID_ALGORITHM shifting_algo;
     enum RINGBUFFER_SHIFTING_ALGORITHMUS ring_algo;
 } _word_pyramidbuf_t;
+
+
 
 _word_pyramidbuf_t* _onepointer_pyramidbuffer_init( const enum PYRAMID_SHAPE pys, const size_t wordlength
                                         , const size_t height_rows, const size_t words_floor_row
